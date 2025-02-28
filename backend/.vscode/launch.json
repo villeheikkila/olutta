@@ -1,0 +1,40 @@
+{
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:backend}",
+      "name": "Debug Ylahylly",
+      "program": "${workspaceFolder:backend}/.build/debug/Ylahylly",
+      "preLaunchTask": "swift: Build Debug Ylahylly"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:backend}",
+      "name": "Release Ylahylly",
+      "program": "${workspaceFolder:backend}/.build/release/Ylahylly",
+      "preLaunchTask": "swift: Build Release Ylahylly"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:backend}",
+      "name": "Debug YlahyllyBackend",
+      "program": "${workspaceFolder:backend}/.build/debug/YlahyllyBackend",
+      "preLaunchTask": "swift: Build Debug YlahyllyBackend"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:backend}",
+      "name": "Release YlahyllyBackend",
+      "program": "${workspaceFolder:backend}/.build/release/YlahyllyBackend",
+      "preLaunchTask": "swift: Build Release YlahyllyBackend"
+    }
+  ]
+}

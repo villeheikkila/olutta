@@ -87,7 +87,7 @@
 				5CE27B402D40389200578072 /* NukeUI */,
 				5CE27B452D417C9E00578072 /* SwiftUIKit */,
 			);
-			productName = olutta;
+			productName = Ylahylly;
 			productReference = 5C80F5F82D3D88220040F4B8 /* Ylahylly.app */;
 			productType = "com.apple.product-type.application";
 		};
