@@ -13,7 +13,7 @@ struct AlkoRepository: Sendable {
             "postal_code",
             "latitude",
             "longitude",
-            "outlet_type"
+            "outlet_type",
         ]
         var bindings: PostgresBindings = .init()
         var placeholders: [String] = []
@@ -27,7 +27,7 @@ struct AlkoRepository: Sendable {
             bindings.append(store.longitude)
             bindings.append(store.outletType)
             let base = index * columns.count
-            let paramIndices = (1...columns.count).map { "$\(base + $0)" }
+            let paramIndices = (1 ... columns.count).map { "$\(base + $0)" }
             let placeholder = "(\(paramIndices.joined(separator: ", ")))"
             placeholders.append(placeholder)
         }

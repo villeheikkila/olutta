@@ -13,7 +13,8 @@ public func buildApplication(
     let serverName = "Ylähylly"
     let logger = buildLogger(
         label: serverName, telegramApiKey: arguments.telegramApiKey,
-        telegramErrorChatId: arguments.telegramErrorChatId, logLevel: arguments.logLevel)
+        telegramErrorChatId: arguments.telegramErrorChatId, logLevel: arguments.logLevel
+    )
     logger.info("starting server...")
     let config = Config(
         pgHost: arguments.pgHost,

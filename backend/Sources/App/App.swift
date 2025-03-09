@@ -43,13 +43,13 @@ struct AppCommand: AsyncParsableCommand, AppArguments {
 
     @Option(name: .long)
     var pgDatabase: String = Environment().get("DB_NAME") ?? "postgres"
-    
+
     @Option(name: .long)
     var telegramApiKey: String = Environment().get("TELEGRAM_API_KEY")!
 
     @Option(name: .long)
     var telegramErrorChatId: String = Environment().get("TELEGRAM_ERROR_CHAT_ID")!
-    
+
     @Option(name: .long)
     var alkoBaseUrl: String = Environment().get("ALKO_BASE_URL")!
 
@@ -58,7 +58,7 @@ struct AppCommand: AsyncParsableCommand, AppArguments {
 
     @Option(name: .long)
     var alkoApiKey: String = Environment().get("ALKO_API_KEY")!
-    
+
     func run() async throws {
         let app = try await buildApplication(self)
         try await app.runService()

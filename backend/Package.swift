@@ -29,7 +29,6 @@ let package = Package(
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "PGMQ", package: "pgmq-swift"),
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
-
             ],
             path: "Sources"
         ),
@@ -38,7 +37,10 @@ let package = Package(
             dependencies: [
                 "Ylahylly",
             ],
-            path: "Tests"
+            path: "Tests",
+            resources: [
+                .copy("Resources"),
+            ]
         ),
     ]
 )

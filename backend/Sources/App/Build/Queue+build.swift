@@ -10,7 +10,7 @@ func buildQueue(context: Context) async throws -> QueueManager<Context> {
         )
     )
     let jobs: [QueueConfiguration<Context>] = [
-        alkoQueue
+        alkoQueue,
     ]
     for config in jobs {
         await queueManager.registerQueue(
