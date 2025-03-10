@@ -4,6 +4,7 @@ import Logging
 
 struct Services: Sendable {
     let alko: AlkoService
+    let untappd: UntappdService
 
     init(logger: Logger, httpClient: HTTPClient, config: Config) async {
         alko = .init(
@@ -12,6 +13,13 @@ struct Services: Sendable {
             apiKey: config.alkoApiKey,
             baseUrl: config.alkoBaseUrl,
             agent: config.alkoAgent
+        )
+        untappd = .init(
+            logger: logger,
+            httpClient: httpClient,
+            appName: config.appName,
+            clientId: config.untappdClientId,
+            clientSecret: config.untappdClientSecret
         )
     }
 }

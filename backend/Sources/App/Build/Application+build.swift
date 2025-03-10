@@ -17,6 +17,7 @@ public func buildApplication(
     )
     logger.info("starting server...")
     let config = Config(
+        appName: serverName,
         pgHost: arguments.pgHost,
         pgPort: arguments.pgPort,
         pgUsername: arguments.pgUsername,
@@ -24,7 +25,9 @@ public func buildApplication(
         pgDatabase: arguments.pgDatabase,
         alkoApiKey: arguments.alkoApiKey,
         alkoBaseUrl: arguments.alkoBaseUrl,
-        alkoAgent: arguments.alkoAgent
+        alkoAgent: arguments.alkoAgent,
+        untappdClientId: arguments.untappdClientId,
+        untappdClientSecret: arguments.untappdClientSecret
     )
     let context = await buildContext(logger: logger, config: config)
     let router = buildRouter(ctx: context)
@@ -50,6 +53,7 @@ public func buildApplication(
 }
 
 struct Config: Sendable {
+    let appName: String
     let pgHost: String
     let pgPort: Int
     let pgUsername: String
@@ -58,4 +62,6 @@ struct Config: Sendable {
     let alkoApiKey: String
     let alkoBaseUrl: String
     let alkoAgent: String
+    let untappdClientId: String
+    let untappdClientSecret: String
 }

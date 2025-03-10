@@ -20,6 +20,7 @@ final class AlkoService: Sendable {
         self.agent = agent
     }
 
+    // public methods
     public func getStores() async throws(AlkoError) -> [AlkoStoreResponse] {
         try await request(endpoint: "/v1/stores?lang=fi")
     }
@@ -32,7 +33,19 @@ final class AlkoService: Sendable {
         try await request(endpoint: "/v1/webshopAvailability/products=\(id)&lang=fi")
     }
 
-    public func getBeers() async throws(AlkoError) -> [AlkoSearchProductResponse] {
+    public func getProduct(id: String) async throws(AlkoError) -> AlkoProductResponse {
+        try await request(endpoint: "/v1/products/\(id)?omitFields=webshopAvailability&lang=fi")
+    }
+
+    public func getAllBeers() async throws(AlkoError) -> [AlkoSearchProductResponse] {
+        try await getAllProducts(queries: [
+            .init(op: "eq", field: "productGroupId", value: "productGroup_600"),
+            .init(op: "eq", field: "productGroupId", value: "productGroup_940"),
+        ])
+    }
+
+    // private methods
+    private func getAllProducts(queries: [AlkoService.AlkoSearchRequest.Filter.Query]) async throws(AlkoError) -> [AlkoSearchProductResponse] {
         var allProducts: [AlkoSearchProductResponse] = []
         var skip = 0
         let pageSize = 50
@@ -41,10 +54,7 @@ final class AlkoService: Sendable {
             let searchRequest = AlkoSearchRequest(
                 filter: .init(
                     op: "or",
-                    queries: [
-                        .init(op: "eq", field: "productGroupId", value: "productGroup_600"),
-                        .init(op: "eq", field: "productGroupId", value: "productGroup_940"),
-                    ]
+                    queries: queries
                 ),
                 top: pageSize,
                 skip: skip,
@@ -83,7 +93,7 @@ final class AlkoService: Sendable {
         ]
     }
 
-    enum HTTPMethod {
+    private enum HTTPMethod {
         case GET
         case POST(body: Encodable)
     }
@@ -138,20 +148,19 @@ final class AlkoService: Sendable {
                 throw AlkoError.networkError(statusCode: response.status.code, message: "Unexpected status code")
             }
         } catch let error as AlkoError {
-            logger.error("\(error.description)")
             throw error
         } catch {
             logger.error("Request failed: \(error.localizedDescription)")
-            throw AlkoError.networkError(statusCode: 0, message: error.localizedDescription)
+            throw .networkError(statusCode: 0, message: error.localizedDescription)
         }
     }
 
-    private struct AlkoSearchRequest: Encodable {
-        struct Filter: Encodable {
-            struct Query: Encodable {
-                let op: String
-                let field: String
-                let value: String
+    public struct AlkoSearchRequest: Encodable {
+        public struct Filter: Encodable {
+            public struct Query: Encodable {
+                public let op: String
+                public let field: String
+                public let value: String
             }
 
             let op: String

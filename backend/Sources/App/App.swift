@@ -16,6 +16,8 @@ public protocol AppArguments: Sendable {
     var alkoBaseUrl: String { get }
     var alkoApiKey: String { get }
     var alkoAgent: String { get }
+    var untappdClientId: String { get }
+    var untappdClientSecret: String { get }
 }
 
 @main
@@ -58,6 +60,12 @@ struct AppCommand: AsyncParsableCommand, AppArguments {
 
     @Option(name: .long)
     var alkoApiKey: String = Environment().get("ALKO_API_KEY")!
+
+    @Option(name: .long)
+    var untappdClientId: String = Environment().get("UNTAPPD_CLIENT_ID")!
+
+    @Option(name: .long)
+    var untappdClientSecret: String = Environment().get("UNTAPPD_CLIENT_SECRET")!
 
     func run() async throws {
         let app = try await buildApplication(self)
