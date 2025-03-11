@@ -3,10 +3,13 @@ import PostgresNIO
 
 struct AlkoRepository: Sendable {
     let logger: Logger
-    
-    func upsertBeers(_ connection: PostgresConnection, beers: [AlkoSearchProductResponse]) async throws -> [(id: String, isNewRecord: Bool)] {
+
+    func upsertAlkoProducts(
+        _ connection: PostgresConnection,
+        products: [AlkoSearchProductResponse]
+    ) async throws -> [(id: UUID, isNewRecord: Bool)] {
         let columns = [
-            "id",
+            "alko_id",
             "taste",
             "additional_info",
             "abv",
@@ -23,40 +26,38 @@ struct AlkoRepository: Sendable {
             "volume",
             "online_availability_datetime_ts",
             "description",
-            "certificate_id"
+            "certificate_id",
         ]
-        
         var bindings: PostgresBindings = .init()
         var placeholders: [String] = []
-        
-        for (index, beer) in beers.enumerated() {
-            bindings.append(beer.id)
-            bindings.append(beer.taste)
-            bindings.append(beer.additionalInfo)
-            bindings.append(beer.abv)
-            bindings.append(beer.beerStyleId)
-            bindings.append(beer.beerStyleName)
-            bindings.append(beer.beerSubstyleId ?? [])
-            bindings.append(beer.countryName)
-            bindings.append(beer.foodSymbolId ?? [])
-            bindings.append(beer.mainGroupId)
-            bindings.append(beer.name)
-            bindings.append(beer.price)
-            bindings.append(beer.productGroupId)
-            bindings.append(beer.productGroupName)
-            bindings.append(beer.volume)
-            bindings.append(beer.onlineAvailabilityDatetimeTs)
-            bindings.append(beer.description)
-            bindings.append(beer.certificateId ?? [])
+        for (index, product) in products.enumerated() {
+            bindings.append(product.id)
+            bindings.append(product.taste)
+            bindings.append(product.additionalInfo)
+            bindings.append(product.abv)
+            bindings.append(product.beerStyleId)
+            bindings.append(product.beerStyleName)
+            bindings.append(product.beerSubstyleId ?? [])
+            bindings.append(product.countryName)
+            bindings.append(product.foodSymbolId ?? [])
+            bindings.append(product.mainGroupId)
+            bindings.append(product.name)
+            bindings.append(product.price)
+            bindings.append(product.productGroupId)
+            bindings.append(product.productGroupName)
+            bindings.append(product.volume)
+            bindings.append(product.onlineAvailabilityDatetimeTs)
+            bindings.append(product.description)
+            bindings.append(product.certificateId ?? [])
             let base = index * columns.count
-            let paramIndices = (1...columns.count).map { "$\(base + $0)" }
+            let paramIndices = (1 ... columns.count).map { "$\(base + $0)" }
             let placeholder = "(\(paramIndices.joined(separator: ", ")))"
             placeholders.append(placeholder)
         }
         let query = """
-            INSERT INTO alko_beer (\(columns.joined(separator: ", ")))
+            INSERT INTO alko_product (\(columns.joined(separator: ", ")))
             VALUES \(placeholders.joined(separator: ", "))
-            ON CONFLICT (id) DO UPDATE SET
+            ON CONFLICT (alko_id) DO UPDATE SET
                 taste = EXCLUDED.taste,
                 additional_info = EXCLUDED.additional_info,
                 abv = EXCLUDED.abv,
@@ -73,15 +74,16 @@ struct AlkoRepository: Sendable {
                 volume = EXCLUDED.volume,
                 online_availability_datetime_ts = EXCLUDED.online_availability_datetime_ts,
                 description = EXCLUDED.description,
-                certificate_id = EXCLUDED.certificate_id
+                certificate_id = EXCLUDED.certificate_id,
+                updated_at = NOW()
             RETURNING id, (xmax = 0) AS is_new_record;
         """
         let result = try await connection.query(.init(unsafeSQL: query, binds: bindings), logger: logger)
-        var beerResults: [(id: String, isNewRecord: Bool)] = []
-        for try await (id, isNewRecord) in result.decode((String, Bool).self) {
-            beerResults.append((id: id, isNewRecord: isNewRecord))
+        var productResults: [(id: UUID, isNewRecord: Bool)] = []
+        for try await (id, isNewRecord) in result.decode((UUID, Bool).self) {
+            productResults.append((id: id, isNewRecord: isNewRecord))
         }
-        return beerResults
+        return productResults
     }
 
     func upsertStores(_ connection: PostgresConnection, stores: [AlkoStoreResponse]) async throws -> [(id: String, isNewRecord: Bool)] {
