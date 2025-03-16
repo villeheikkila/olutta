@@ -88,7 +88,7 @@ struct AlkoRepository: Sendable {
 
     func upsertStores(_ connection: PostgresConnection, stores: [AlkoStoreResponse]) async throws -> [(id: String, isNewRecord: Bool)] {
         let columns = [
-            "id",
+            "alko_store_id",
             "name",
             "address",
             "city",
@@ -116,7 +116,7 @@ struct AlkoRepository: Sendable {
         let query = """
             INSERT INTO alko_store (\(columns.joined(separator: ", ")))
             VALUES \(placeholders.joined(separator: ", "))
-            ON CONFLICT (id) DO UPDATE SET
+            ON CONFLICT (alko_store_id) DO UPDATE SET
                 name = EXCLUDED.name,
                 address = EXCLUDED.address,
                 city = EXCLUDED.city,
@@ -133,4 +133,107 @@ struct AlkoRepository: Sendable {
         }
         return storeResults
     }
+    
+    func upsertWebstoreInventory(_ connection: PostgresConnection, availabilities: [AlkoWebAvailabilityResponse]) async throws -> [(id: UUID, isNewRecord: Bool)] {
+        let columns = [
+            "alko_product_id",
+            "status_code",
+            "message_code",
+            "estimated_availability_date",
+            "delivery_min",
+            "delivery_max",
+            "status_en",
+            "status_fi",
+            "status_sv",
+            "status_message"
+        ]
+        var bindings: PostgresBindings = .init()
+        var placeholders: [String] = []
+        for (index, availability) in availabilities.enumerated() {
+            bindings.append(UUID(uuidString: availability.productId) ?? UUID()) // Convert String to UUID
+            bindings.append(availability.statusCode)
+            bindings.append(availability.messageCode)
+            bindings.append(availability.estimatedAvailabilityDate) // This is optional
+            bindings.append(availability.delivery?.min)
+            bindings.append(availability.delivery?.max)
+            bindings.append(availability.status.en)
+            bindings.append(availability.status.fi)
+            bindings.append(availability.status.sv)
+            bindings.append(availability.statusMessage)
+            let base = index * columns.count
+            let paramIndices = (1...columns.count).map { "$\(base + $0)" }
+            let placeholder = "(\(paramIndices.joined(separator: ", ")))"
+            placeholders.append(placeholder)
+        }
+        let query = """
+            INSERT INTO alko_webstore_inventory (\(columns.joined(separator: ", ")))
+            VALUES \(placeholders.joined(separator: ", "))
+            ON CONFLICT (alko_product_id) DO UPDATE SET
+                status_code = EXCLUDED.status_code,
+                message_code = EXCLUDED.message_code,
+                estimated_availability_date = EXCLUDED.estimated_availability_date,
+                delivery_min = EXCLUDED.delivery_min,
+                delivery_max = EXCLUDED.delivery_max,
+                status_en = EXCLUDED.status_en,
+                status_fi = EXCLUDED.status_fi,
+                status_sv = EXCLUDED.status_sv,
+                status_message = EXCLUDED.status_message,
+                updated_at = now()
+            RETURNING alko_product_id, (xmax = 0) AS is_new_record;
+        """
+        
+        let result = try await connection.query(.init(unsafeSQL: query, binds: bindings), logger: logger)
+        var inventoryResults: [(id: UUID, isNewRecord: Bool)] = []
+        for try await (id, isNewRecord) in result.decode((UUID, Bool).self) {
+            inventoryResults.append((id: id, isNewRecord: isNewRecord))
+        }
+        return inventoryResults
+    }
+    
+    func upsertStoreInventory(
+        _ connection: PostgresConnection,
+        availabilities: [AlkoStoreAvailabilityResponse]
+    ) async throws -> [(id: (UUID, UUID), isNewRecord: Bool)] {
+        let columns = [
+            "alko_store_id",
+            "alko_product_id",
+            "product_count"
+        ]
+        var bindings: PostgresBindings = .init()
+        var placeholders: [String] = []
+        
+        for (index, availability) in availabilities.enumerated() {
+            bindings.append(availability.store.id)
+            bindings.append(availability.id)
+            bindings.append(availability.availability)
+            
+            let base = index * columns.count
+            let paramIndices = (1...columns.count).map { "$\(base + $0)" }
+            let placeholder = "(\(paramIndices.joined(separator: ", ")))"
+            placeholders.append(placeholder)
+        }
+        
+        let query = """
+            INSERT INTO alko_store_inventory (\(columns.joined(separator: ", ")))
+            VALUES \(placeholders.joined(separator: ", "))
+            ON CONFLICT (alko_store_id, alko_product_id) DO UPDATE SET
+                product_count = EXCLUDED.product_count
+            RETURNING alko_store_id, alko_product_id, (xmax = 0) AS is_new_record;
+        """
+        
+        let result = try await connection.query(.init(unsafeSQL: query, binds: bindings), logger: logger)
+        var inventoryResults: [(id: (UUID, UUID), isNewRecord: Bool)] = []
+        for try await (storeId, productId, isNewRecord) in result.decode((UUID, UUID, Bool).self) {
+            inventoryResults.append((id: (storeId, productId), isNewRecord: isNewRecord))
+        }
+        if inventoryResults.isEmpty {
+            throw RepositoryError.noData
+        }
+        return inventoryResults
+    }
+
+}
+
+enum RepositoryError: Error {
+    case noData
 }

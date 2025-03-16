@@ -23,10 +23,12 @@ let alkoQueue = QueueConfiguration<Context>(
             }
         case "v1:refresh-availability":
             guard let typeValue = message.message["id"], let id = typeValue.stringValue else { throw QueueError.invalidPayload }
-            try await ctx.pg.withTransaction { _ in
-                let storeAvailability = try await ctx.services.alko.getProduct(id: id)
+            try await ctx.pg.withTransaction { tx in
+                let storeAvailability = try await ctx.services.alko.getAvailability(productId: id)
                 let webstoreAvailability = try await ctx.services.alko.getWebstoreAvailability(id: id)
-                // ctx.logger.info("updated alko beer records, \(result.count) records updated, \(newBeers) new records")
+                let storeAvailabilityResult = try await ctx.repositories.alko.upsertWebstoreInventory(tx, availabilities: webstoreAvailability)
+                let webstoreAvailabilityResult = try await ctx.repositories.alko.upsertStoreInventory(tx, availabilities: storeAvailability)
+                ctx.logger.info("updated alko product availability records", metadata: ["id": .string(id)])
             }
         default:
             ctx.logger.error("unknown message type \(type)")
