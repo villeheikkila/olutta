@@ -11,6 +11,7 @@ func buildQueue(context: Context) async throws -> QueueManager<Context> {
     )
     let jobs: [QueueConfiguration<Context>] = [
         alkoQueue,
+        untappdQueue,
     ]
     for config in jobs {
         await queueManager.registerQueue(

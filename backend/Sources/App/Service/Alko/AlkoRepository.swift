@@ -133,7 +133,7 @@ struct AlkoRepository: Sendable {
         }
         return storeResults
     }
-    
+
     func upsertWebstoreInventory(_ connection: PostgresConnection, availabilities: [AlkoWebAvailabilityResponse]) async throws -> [(id: UUID, isNewRecord: Bool)] {
         let columns = [
             "alko_product_id",
@@ -145,7 +145,7 @@ struct AlkoRepository: Sendable {
             "status_en",
             "status_fi",
             "status_sv",
-            "status_message"
+            "status_message",
         ]
         var bindings: PostgresBindings = .init()
         var placeholders: [String] = []
@@ -161,7 +161,7 @@ struct AlkoRepository: Sendable {
             bindings.append(availability.status.sv)
             bindings.append(availability.statusMessage)
             let base = index * columns.count
-            let paramIndices = (1...columns.count).map { "$\(base + $0)" }
+            let paramIndices = (1 ... columns.count).map { "$\(base + $0)" }
             let placeholder = "(\(paramIndices.joined(separator: ", ")))"
             placeholders.append(placeholder)
         }
@@ -181,7 +181,7 @@ struct AlkoRepository: Sendable {
                 updated_at = now()
             RETURNING alko_product_id, (xmax = 0) AS is_new_record;
         """
-        
+
         let result = try await connection.query(.init(unsafeSQL: query, binds: bindings), logger: logger)
         var inventoryResults: [(id: UUID, isNewRecord: Bool)] = []
         for try await (id, isNewRecord) in result.decode((UUID, Bool).self) {
@@ -189,7 +189,7 @@ struct AlkoRepository: Sendable {
         }
         return inventoryResults
     }
-    
+
     func upsertStoreInventory(
         _ connection: PostgresConnection,
         availabilities: [AlkoStoreAvailabilityResponse]
@@ -197,22 +197,22 @@ struct AlkoRepository: Sendable {
         let columns = [
             "alko_store_id",
             "alko_product_id",
-            "product_count"
+            "product_count",
         ]
         var bindings: PostgresBindings = .init()
         var placeholders: [String] = []
-        
+
         for (index, availability) in availabilities.enumerated() {
             bindings.append(availability.store.id)
             bindings.append(availability.id)
             bindings.append(availability.availability)
-            
+
             let base = index * columns.count
-            let paramIndices = (1...columns.count).map { "$\(base + $0)" }
+            let paramIndices = (1 ... columns.count).map { "$\(base + $0)" }
             let placeholder = "(\(paramIndices.joined(separator: ", ")))"
             placeholders.append(placeholder)
         }
-        
+
         let query = """
             INSERT INTO alko_store_inventory (\(columns.joined(separator: ", ")))
             VALUES \(placeholders.joined(separator: ", "))
@@ -220,7 +220,7 @@ struct AlkoRepository: Sendable {
                 product_count = EXCLUDED.product_count
             RETURNING alko_store_id, alko_product_id, (xmax = 0) AS is_new_record;
         """
-        
+
         let result = try await connection.query(.init(unsafeSQL: query, binds: bindings), logger: logger)
         var inventoryResults: [(id: (UUID, UUID), isNewRecord: Bool)] = []
         for try await (storeId, productId, isNewRecord) in result.decode((UUID, UUID, Bool).self) {
@@ -232,8 +232,25 @@ struct AlkoRepository: Sendable {
         return inventoryResults
     }
 
+    func linkAlkoProductToUntappdBeer(
+        _ connection: PostgresConnection,
+        alkoProductId: UUID,
+        untappdId: UUID
+    ) async throws {
+        let result = try await connection.query("""
+            UPDATE alko_product 
+            SET untappd_id = \(untappdId)
+            WHERE id = \(alkoProductId)
+            RETURNING id
+        """, logger: logger)
+        for try await _ in result.decode(UUID.self) {
+            return
+        }
+        throw RepositoryError.recordNotFound
+    }
 }
 
 enum RepositoryError: Error {
     case noData
+    case recordNotFound
 }
