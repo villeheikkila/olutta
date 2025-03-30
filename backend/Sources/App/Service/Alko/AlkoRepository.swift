@@ -4,6 +4,36 @@ import PostgresNIO
 struct AlkoRepository: Sendable {
     let logger: Logger
 
+    func getStores(_ connection: PostgresConnection) async throws -> [AlkoStoreEntity] {
+        let stream = try await connection.query(
+            """
+            SELECT "id", "alko_store_id", "name", "address", "city", 
+                   "postal_code", "latitude", "longitude", "outlet_type", "mapkit_id"
+            FROM alko_store
+            """,
+            logger: logger
+        )
+
+        var stores: [AlkoStoreEntity] = []
+        for try await (id, alkoStoreId, name, address, city, postalCode, latitude, longitude, outletType)
+            in stream.decode((UUID, String, String, String, String, String, Decimal, Decimal, String).self, context: .default)
+        {
+            let store = AlkoStoreEntity(
+                id: id,
+                alkoStoreId: alkoStoreId,
+                name: name,
+                address: address,
+                city: city,
+                postalCode: postalCode,
+                latitude: latitude,
+                longitude: longitude,
+                outletType: outletType
+            )
+            stores.append(store)
+        }
+        return stores
+    }
+
     func upsertAlkoProducts(
         _ connection: PostgresConnection,
         products: [AlkoSearchProductResponse]

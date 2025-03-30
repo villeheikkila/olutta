@@ -9,6 +9,6 @@ func buildRouter(ctx: Context) -> Router<AppRequestContext> {
     router.get("/health") { _, _ -> HTTPResponse.Status in
         return .ok
     }
-    router.addRoutes(AppController(ctx: ctx).endpoints, atPath: "/data")
+    router.addRoutes(AlkoController(ctx: ctx, alkoRepository: ctx.repositories.alko).endpoints, atPath: "/stores")
     return router
 }
