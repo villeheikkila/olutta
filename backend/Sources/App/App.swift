@@ -13,7 +13,7 @@ public protocol AppArguments: Sendable {
 struct AppCommand: AsyncParsableCommand, AppArguments {
     @Option(name: .shortAndLong)
     var serverName: String = "Ylähylly"
-    
+
     @Option(name: .shortAndLong)
     var hostname: String = "localhost"
 

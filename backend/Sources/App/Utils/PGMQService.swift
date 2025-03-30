@@ -105,7 +105,7 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
         self.context = context
         self.logger = logger
         self.poolConfig = poolConfig
-        self.queueHandlers = [:]
+        queueHandlers = [:]
     }
 
     func registerQueue(_ registration: QueueConfiguration<Context>) {
@@ -135,52 +135,52 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
     }
 
     private func processQueue(
-          name queueName: String,
-          registration: QueueConfiguration<Context>
-      ) async throws {
-          while isRunning {
-              do {
-                  let messages = try await context.pgmq.read(
-                      queue: queueName,
-                      vt: registration.policy.visibilityTimeout,
-                      qty: registration.policy.batchSize
-                  )
-                  
-                  guard !messages.isEmpty else {
-                      try await Task.sleep(for: .seconds(poolConfig.pollInterval))
-                      continue
-                  }
+        name queueName: String,
+        registration: QueueConfiguration<Context>
+    ) async throws {
+        while isRunning {
+            do {
+                let messages = try await context.pgmq.read(
+                    queue: queueName,
+                    vt: registration.policy.visibilityTimeout,
+                    qty: registration.policy.batchSize
+                )
 
-                  if registration.policy.isSequential {
-                      for message in messages {
-                          try await processMessage(
+                guard !messages.isEmpty else {
+                    try await Task.sleep(for: .seconds(poolConfig.pollInterval))
+                    continue
+                }
+
+                if registration.policy.isSequential {
+                    for message in messages {
+                        try await processMessage(
                             message,
                             queueName: queueName,
                             policy: registration.policy,
                             handler: registration.handler
-                          )
-                      }
-                  } else {
-                      try await withThrowingTaskGroup(of: Void.self) { group in
-                          for message in messages {
-                              group.addTask {
-                                  try await self.processMessage(
-                                      message,
-                                      queueName: queueName,
-                                      policy: registration.policy,
-                                      handler: registration.handler
-                                  )
-                              }
-                          }
-                          try await group.waitForAll()
-                      }
-                  }
-              } catch {
-                  logger.error("Error processing queue \(queueName): \(error)")
-                  try await Task.sleep(for: .seconds(5))
-              }
-          }
-      }
+                        )
+                    }
+                } else {
+                    try await withThrowingTaskGroup(of: Void.self) { group in
+                        for message in messages {
+                            group.addTask {
+                                try await self.processMessage(
+                                    message,
+                                    queueName: queueName,
+                                    policy: registration.policy,
+                                    handler: registration.handler
+                                )
+                            }
+                        }
+                        try await group.waitForAll()
+                    }
+                }
+            } catch {
+                logger.error("Error processing queue \(queueName): \(error)")
+                try await Task.sleep(for: .seconds(5))
+            }
+        }
+    }
 
     private func calculateBatchSize(queueName: String, policy: QueuePolicy) -> Int {
         let queueAvailableSlots = policy.maxConcurrentJobs - activeJobsPerQueue[queueName, default: 0]
@@ -256,7 +256,6 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
         _ = try await context.pgmq.archive(queue: queueName, id: message.id)
     }
 }
-
 
 public struct DLQMessage: Sendable, Codable, PostgresEncodable {
     public static let psqlFormat: PostgresFormat = .text
