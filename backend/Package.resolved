@@ -1,5 +1,5 @@
 {
-  "originHash" : "e47c505496475405380e10d4d024ecc9c21c67bb0987ce9f4274d5b492f8e4e4",
+  "originHash" : "429b57f7df8c05e9d083dd87d7ade02439adc6107e8fab72ba0e878816959afb",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -20,6 +20,15 @@
       }
     },
     {
+      "identity" : "hummingbird-redis",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/hummingbird-project/hummingbird-redis.git",
+      "state" : {
+        "revision" : "3218ec5c145669b39ce4b4a27930987b4ee7c03d",
+        "version" : "2.0.0"
+      }
+    },
+    {
       "identity" : "pgmq-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/villeheikkila/pgmq-swift",
@@ -35,6 +44,15 @@
       "state" : {
         "revision" : "5d817be55cae8b00003b7458944954558302d006",
         "version" : "1.25.0"
+      }
+    },
+    {
+      "identity" : "redistack",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swift-server/RediStack.git",
+      "state" : {
+        "revision" : "622ce440f90d79b58e45f3a3efdd64c51d1dfd17",
+        "version" : "1.6.2"
       }
     },
     {

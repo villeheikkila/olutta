@@ -4,6 +4,7 @@ import Hummingbird
 import Logging
 import PGMQ
 @preconcurrency import PostgresNIO
+import RegexBuilder
 import ServiceLifecycle
 
 typealias AppRequestContext = BasicRequestContext

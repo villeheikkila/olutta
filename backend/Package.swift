@@ -17,6 +17,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.2"),
         .package(url: "https://github.com/villeheikkila/pgmq-swift", .upToNextMajor(from: "0.0.8")),
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.24.2"),
+        .package(url: "https://github.com/hummingbird-project/hummingbird-redis.git", from: "2.0.0"),
     ],
     targets: [
         .executableTarget(
@@ -29,8 +30,12 @@ let package = Package(
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "PGMQ", package: "pgmq-swift"),
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
+                .product(name: "HummingbirdRedis", package: "hummingbird-redis"),
             ],
-            path: "Sources"
+            path: "Sources",
+            resources: [
+                .copy("App/migrations.sql"),
+            ]
         ),
         .testTarget(
             name: "YlahyllyTests",
