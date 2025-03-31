@@ -22,7 +22,7 @@ public func buildApplication(
     )
     logger.info("starting \(args.serverName) server on port \(args.hostname):\(args.port)...")
     let config = buildConfig(args: args, env: env)
-    let context = await buildContext(logger: logger, config: config)
+    let context = try await buildContext(logger: logger, config: config)
     let router = buildRouter(ctx: context)
     var app = Application(
         router: router,
@@ -33,6 +33,7 @@ public func buildApplication(
         logger: logger
     )
     app.addServices(context.pg)
+    app.addServices(context.redis)
     let queueService = PGMQService(context: context, logger: logger, poolConfig: .init(
         maxConcurrentJobs: 3,
         pollInterval: 1

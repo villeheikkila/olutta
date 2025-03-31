@@ -6,6 +6,8 @@ func buildConfig(args: AppArguments, env: Env) -> Config {
         pgUsername: env.pgUsername,
         pgPassword: env.pgPassword,
         pgDatabase: env.pgDatabase,
+        redisHostname: env.redisHostname,
+        redisPort: env.redisPort,
         alkoApiKey: env.alkoApiKey,
         alkoBaseUrl: env.alkoBaseUrl,
         alkoAgent: env.alkoAgent,
@@ -21,6 +23,8 @@ struct Config: Sendable {
     let pgUsername: String
     let pgPassword: String
     let pgDatabase: String
+    let redisHostname: String
+    let redisPort: Int
     let alkoApiKey: String
     let alkoBaseUrl: String
     let alkoAgent: String

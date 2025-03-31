@@ -32,10 +32,7 @@ let package = Package(
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
                 .product(name: "HummingbirdRedis", package: "hummingbird-redis"),
             ],
-            path: "Sources",
-            resources: [
-                .copy("App/migrations.sql"),
-            ]
+            path: "Sources"
         ),
         .testTarget(
             name: "YlahyllyTests",

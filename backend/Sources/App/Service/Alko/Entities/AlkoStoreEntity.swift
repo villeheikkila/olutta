@@ -1,6 +1,6 @@
 import Foundation
 
-struct AlkoStoreEntity: Encodable {
+struct AlkoStoreEntity: Codable {
     let id: UUID
     let alkoStoreId: String
     let name: String

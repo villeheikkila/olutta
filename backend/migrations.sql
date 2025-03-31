@@ -47,4 +47,10 @@ $$
   );
 $$);
 
+SELECT apply_migration('enable_pgmq',
+$$
+  SELECT pgmq.create('untappd');
+  SELECT pgmq.create('alko');
+$$);
+
 commit;

@@ -8,8 +8,8 @@ struct AlkoRepository: Sendable {
         let stream = try await connection.query(
             """
             SELECT "id", "alko_store_id", "name", "address", "city", 
-                   "postal_code", "latitude", "longitude", "outlet_type", "mapkit_id"
-            FROM alko_store
+                   "postal_code", "latitude", "longitude", "outlet_type"
+            FROM alko_stores
             """,
             logger: logger
         )
@@ -144,7 +144,7 @@ struct AlkoRepository: Sendable {
             placeholders.append(placeholder)
         }
         let query = """
-            INSERT INTO alko_store (\(columns.joined(separator: ", ")))
+            INSERT INTO alko_stores (\(columns.joined(separator: ", ")))
             VALUES \(placeholders.joined(separator: ", "))
             ON CONFLICT (alko_store_id) DO UPDATE SET
                 name = EXCLUDED.name,
