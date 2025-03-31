@@ -12,7 +12,8 @@ func buildConfig(args: AppArguments, env: Env) -> Config {
         alkoBaseUrl: env.alkoBaseUrl,
         alkoAgent: env.alkoAgent,
         untappdClientId: env.untappdClientId,
-        untappdClientSecret: env.untappdClientSecret
+        untappdClientSecret: env.untappdClientSecret,
+        requestSignatureSalt: env.requestSignatureSalt
     )
 }
 
@@ -30,4 +31,5 @@ struct Config: Sendable {
     let alkoAgent: String
     let untappdClientId: String
     let untappdClientSecret: String
+    let requestSignatureSalt: String
 }

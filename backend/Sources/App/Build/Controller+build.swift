@@ -5,6 +5,7 @@ func buildRouter(ctx: Context) -> Router<AppRequestContext> {
     let router = Router(context: AppRequestContext.self)
     router.addMiddleware {
         LogRequestsMiddleware(.info)
+        RequestSignatureMiddleware(secretKey: ctx.config.requestSignatureSalt)
     }
     router.get("/health") { _, _ -> HTTPResponse.Status in
         return .ok

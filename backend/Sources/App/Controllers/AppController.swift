@@ -1,8 +1,8 @@
 import Foundation
 import Hummingbird
 import HummingbirdRedis
-import PostgresNIO
 import Logging
+import PostgresNIO
 
 struct AppController {
     let logger: Logger
@@ -25,7 +25,7 @@ extension AppController {
             return cachedValue
         }
         let stores = try await pg.withTransaction { tx in
-           try await alkoRepository.getStores(tx)
+            try await alkoRepository.getStores(tx)
         }
         try await persist.set(key: key, value: stores, expires: .seconds(60))
         return stores

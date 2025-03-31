@@ -1,8 +1,8 @@
 import AsyncHTTPClient
 import Foundation
+import HummingbirdRedis
 import PGMQ
 import PostgresNIO
-import HummingbirdRedis
 
 struct Context: QueueContextProtocol {
     let pgmq: PGMQ
@@ -12,6 +12,7 @@ struct Context: QueueContextProtocol {
     let logger: Logger
     let services: Services
     let repositories: Repositories
+    let config: Config
 }
 
 func buildContext(logger: Logger, config: Config) async throws -> Context {
@@ -35,5 +36,5 @@ func buildContext(logger: Logger, config: Config) async throws -> Context {
     let pgmq = PGMQClient(client: pg)
     let repository = Repositories(logger: logger)
     let service = await Services(logger: logger, httpClient: httpClient, config: config)
-    return Context(pgmq: pgmq, pg: pg, redis: redis, persist: persist, logger: logger, services: service, repositories: repository)
+    return Context(pgmq: pgmq, pg: pg, redis: redis, persist: persist, logger: logger, services: service, repositories: repository, config: config)
 }
