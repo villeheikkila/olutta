@@ -1,12 +1,30 @@
 import ClusterMap
 import MapKit
 import SwiftUI
+import CryptoKit
+import OluttaShared
+import HTTPTypes
+import HTTPTypesFoundation
+
+struct AlkoStoreEntity: Codable {
+    let id: UUID
+    let alkoStoreId: String
+    let name: String
+    let address: String
+    let city: String
+    let postalCode: String
+    let latitude: Decimal
+    let longitude: Decimal
+    let outletType: String
+}
+
 
 @Observable
 class AppModel {
     var data: ResponseEntity?
     var isLoading = true
     var error: Error?
+    var s: [AlkoStoreEntity] = []
 
     var stores: [StoreEntity] {
         guard let data else { return [] }
@@ -24,6 +42,61 @@ class AppModel {
         guard let data else { return [] }
         return store.beers.compactMap { beerId in
             data.beers[beerId]
+        }
+    }
+    
+    func loadStores() async {
+        isLoading = true
+        let startTime = Date()
+        let urlString = "http://localhost:3000/v1/stores"
+        guard let url = URL(string: urlString) else {
+            self.error = NSError(domain: "AppError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
+            isLoading = false
+            return
+        }
+        do {
+            var httpFields = HTTPFields()
+            httpFields.append(.init(name: .init("Content-Type")!, value: "application/json"))
+            let signatureService = SignatureService(secretKey: "a1b2c3d4e5f6g7h8i9j0k")
+            let signatureResult = try signatureService.createSignature(
+                method: .get,
+                path: url.path,
+                headers: httpFields,
+                body: nil
+            )
+            httpFields.append(.init(name: .requestSignature, value: signatureResult.signature))
+            if let bodyHash = signatureResult.bodyHash {
+                httpFields.append(.init(name: .bodyHash, value: bodyHash))
+            }
+            let httpRequest = HTTPRequest(
+                method: .get,
+                scheme: url.scheme,
+                authority: url.host != nil ? "\(url.host!):\(url.port ?? 3000)" : nil,
+                path: url.path,
+                headerFields: httpFields
+            )
+            let request = URLRequest(httpRequest: httpRequest)!
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let httpResponse = response as? HTTPURLResponse {
+                print("Response status code: \(httpResponse.statusCode)")
+            }
+            if let responseText = String(data: data, encoding: .utf8) {
+                print("Response as text:")
+                print(responseText)
+            } else {
+                print("Could not convert response data to text")
+            }
+            let decoder = JSONDecoder()
+            let r = try decoder.decode([AlkoStoreEntity].self, from: data)
+            let fetchDuration = Date().timeIntervalSince(startTime)
+            s = r
+            print("Fetch completed in \(String(format: "%.2f", fetchDuration)) seconds")
+            isLoading = false
+        } catch {
+            print("Error: \(error)")
+            print("Error details: \(error.localizedDescription)")
+            self.error = error
+            isLoading = false
         }
     }
 

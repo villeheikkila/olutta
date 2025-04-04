@@ -1,0 +1,58 @@
+{
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:ylähylly}/backend",
+            "name": "Debug Ylahylly (backend)",
+            "program": "${workspaceFolder:ylähylly}/backend/.build/debug/Ylahylly",
+            "preLaunchTask": "swift: Build Debug Ylahylly (backend)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:ylähylly}/backend",
+            "name": "Release Ylahylly (backend)",
+            "program": "${workspaceFolder:ylähylly}/backend/.build/release/Ylahylly",
+            "preLaunchTask": "swift: Build Release Ylahylly (backend)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:ylähylly}/OluttaBackend",
+            "name": "Debug Ylahylly (OluttaBackend)",
+            "program": "${workspaceFolder:ylähylly}/OluttaBackend/.build/debug/Ylahylly",
+            "preLaunchTask": "swift: Build Debug Ylahylly (OluttaBackend)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:ylähylly}/OluttaBackend",
+            "name": "Release Ylahylly (OluttaBackend)",
+            "program": "${workspaceFolder:ylähylly}/OluttaBackend/.build/release/Ylahylly",
+            "preLaunchTask": "swift: Build Release Ylahylly (OluttaBackend)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:ylähylly}/OluttaBackend",
+            "name": "Debug OluttaBackend (OluttaBackend)",
+            "program": "${workspaceFolder:ylähylly}/OluttaBackend/.build/debug/OluttaBackend",
+            "preLaunchTask": "swift: Build Debug OluttaBackend (OluttaBackend)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:ylähylly}/OluttaBackend",
+            "name": "Release OluttaBackend (OluttaBackend)",
+            "program": "${workspaceFolder:ylähylly}/OluttaBackend/.build/release/OluttaBackend",
+            "preLaunchTask": "swift: Build Release OluttaBackend (OluttaBackend)"
+        }
+    ]
+}

@@ -7,10 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5C9F75CB2DA06CCB000FD9A9 /* OluttaShared in Frameworks */ = {isa = PBXBuildFile; productRef = 5C9F75CA2DA06CCB000FD9A9 /* OluttaShared */; };
+		5C9F75CD2DA06D0D000FD9A9 /* OluttaShared in Frameworks */ = {isa = PBXBuildFile; productRef = 5C9F75CC2DA06D0D000FD9A9 /* OluttaShared */; };
 		5CE27B3D2D4031F400578072 /* ClusterMap in Frameworks */ = {isa = PBXBuildFile; productRef = 5CE27B3C2D4031F400578072 /* ClusterMap */; };
 		5CE27B3F2D4031F400578072 /* ClusterMapSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5CE27B3E2D4031F400578072 /* ClusterMapSwiftUI */; };
 		5CE27B412D40389200578072 /* NukeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5CE27B402D40389200578072 /* NukeUI */; };
 		5CE27B462D417C9E00578072 /* SwiftUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 5CE27B452D417C9E00578072 /* SwiftUIKit */; };
+		5CE2B00E2DA06E7D00185676 /* HTTPTypesFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 5CE2B00D2DA06E7D00185676 /* HTTPTypesFoundation */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,9 +38,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5C9F75CD2DA06D0D000FD9A9 /* OluttaShared in Frameworks */,
 				5CE27B412D40389200578072 /* NukeUI in Frameworks */,
 				5CE27B462D417C9E00578072 /* SwiftUIKit in Frameworks */,
 				5CE27B3F2D4031F400578072 /* ClusterMapSwiftUI in Frameworks */,
+				5CE2B00E2DA06E7D00185676 /* HTTPTypesFoundation in Frameworks */,
+				5C9F75CB2DA06CCB000FD9A9 /* OluttaShared in Frameworks */,
 				5CE27B3D2D4031F400578072 /* ClusterMap in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -86,6 +92,9 @@
 				5CE27B3E2D4031F400578072 /* ClusterMapSwiftUI */,
 				5CE27B402D40389200578072 /* NukeUI */,
 				5CE27B452D417C9E00578072 /* SwiftUIKit */,
+				5C9F75CA2DA06CCB000FD9A9 /* OluttaShared */,
+				5C9F75CC2DA06D0D000FD9A9 /* OluttaShared */,
+				5CE2B00D2DA06E7D00185676 /* HTTPTypesFoundation */,
 			);
 			productName = Ylahylly;
 			productReference = 5C80F5F82D3D88220040F4B8 /* Ylahylly.app */;
@@ -119,6 +128,8 @@
 				5C80F6142D4005FC0040F4B8 /* XCRemoteSwiftPackageReference "Nuke" */,
 				5C80F6152D4030C30040F4B8 /* XCRemoteSwiftPackageReference "ClusterMap" */,
 				5CE27B442D417C9E00578072 /* XCRemoteSwiftPackageReference "SwiftUIKit" */,
+				5C9F75C92DA06CCB000FD9A9 /* XCLocalSwiftPackageReference "../OluttaShared" */,
+				5CE2B00C2DA06E7D00185676 /* XCRemoteSwiftPackageReference "swift-http-types" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5C80F5F92D3D88220040F4B8 /* Products */;
@@ -368,6 +379,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		5C9F75C92DA06CCB000FD9A9 /* XCLocalSwiftPackageReference "../OluttaShared" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../OluttaShared;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		5C80F6142D4005FC0040F4B8 /* XCRemoteSwiftPackageReference "Nuke" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -393,9 +411,25 @@
 				minimumVersion = 5.1.1;
 			};
 		};
+		5CE2B00C2DA06E7D00185676 /* XCRemoteSwiftPackageReference "swift-http-types" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-http-types.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		5C9F75CA2DA06CCB000FD9A9 /* OluttaShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OluttaShared;
+		};
+		5C9F75CC2DA06D0D000FD9A9 /* OluttaShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OluttaShared;
+		};
 		5CE27B3C2D4031F400578072 /* ClusterMap */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 5C80F6152D4030C30040F4B8 /* XCRemoteSwiftPackageReference "ClusterMap" */;
@@ -415,6 +449,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5CE27B442D417C9E00578072 /* XCRemoteSwiftPackageReference "SwiftUIKit" */;
 			productName = SwiftUIKit;
+		};
+		5CE2B00D2DA06E7D00185676 /* HTTPTypesFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5CE2B00C2DA06E7D00185676 /* XCRemoteSwiftPackageReference "swift-http-types" */;
+			productName = HTTPTypesFoundation;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

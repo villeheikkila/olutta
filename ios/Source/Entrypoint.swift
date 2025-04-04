@@ -13,7 +13,7 @@ struct Entrypoint: App {
             }
             .environment(appModel)
             .task {
-                await appModel.fetchBeerStoreData()
+                await appModel.loadStores()
             }
         }
     }
