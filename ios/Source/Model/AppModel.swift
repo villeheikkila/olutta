@@ -50,7 +50,6 @@ class AppModel {
         let startTime = Date()
         let urlString = "http://localhost:3000/v1/stores"
         guard let url = URL(string: urlString) else {
-            self.error = NSError(domain: "AppError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
             isLoading = false
             return
         }
