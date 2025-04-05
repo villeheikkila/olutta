@@ -1,7 +1,7 @@
-import Testing
-@testable import OluttaShared
 import Foundation
 import HTTPTypes
+@testable import OluttaShared
+import Testing
 
 @Test func testComputeBodyHash() {
     let service = SignatureService(secretKey: "test-secret-key")
@@ -24,7 +24,7 @@ import HTTPTypes
     var headers = HTTPFields()
     headers.append(.init(name: .init("Content-Type")!, value: "application/json"))
     let body = "{\"key\":\"value\"}".data(using: .utf8)
-    
+
     let result = try service.createSignature(
         method: method,
         path: path,

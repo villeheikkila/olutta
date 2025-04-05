@@ -68,7 +68,7 @@ struct StoreDetailView: View {
                         Text("All").tag("All")
                         ForEach(beers.groupedBeerStyles, id: \.category) { group in
                             Section(header: Text(group.category)) {
-                                if group.styles.count > 1 && !group.styles.map(\.name).contains(group.category) {
+                                if group.styles.count > 1, !group.styles.map(\.name).contains(group.category) {
                                     Text("\(group.category) (\(group.categoryCount))")
                                         .tag(group.category)
                                 }

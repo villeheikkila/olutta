@@ -15,8 +15,8 @@ struct AlkoRepository: Sendable {
         )
 
         var stores: [AlkoStoreEntity] = []
-        for try await (id, alkoStoreId, name, address, city, postalCode, latitude, longitude, outletType)
-            in stream.decode((UUID, String, String, String, String, String, Decimal, Decimal, String).self, context: .default)
+        for try await (id, alkoStoreId, name, address, city, postalCode, latitude, longitude)
+            in stream.decode((UUID, String, String, String, String, String, Double, Double).self, context: .default)
         {
             let store = AlkoStoreEntity(
                 id: id,
@@ -26,8 +26,7 @@ struct AlkoRepository: Sendable {
                 city: city,
                 postalCode: postalCode,
                 latitude: latitude,
-                longitude: longitude,
-                outletType: outletType
+                longitude: longitude
             )
             stores.append(store)
         }

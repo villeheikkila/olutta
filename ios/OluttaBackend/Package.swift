@@ -18,7 +18,7 @@ let package = Package(
         .package(url: "https://github.com/villeheikkila/pgmq-swift", .upToNextMajor(from: "0.0.8")),
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.24.2"),
         .package(url: "https://github.com/hummingbird-project/hummingbird-redis.git", from: "2.0.0"),
-        .package(name: "OluttaShared", path: "../OluttaShared")
+        .package(name: "OluttaShared", path: "../OluttaShared"),
     ],
     targets: [
         .executableTarget(

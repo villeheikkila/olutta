@@ -7,7 +7,6 @@ struct AlkoStoreEntity: Codable {
     let address: String
     let city: String
     let postalCode: String
-    let latitude: Decimal
-    let longitude: Decimal
-    let outletType: String
+    let latitude: Double
+    let longitude: Double
 }

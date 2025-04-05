@@ -52,9 +52,9 @@ struct BeerEntity: Codable, Identifiable, Hashable {
     }
 }
 
-extension Array where Element == BeerEntity {
+extension [BeerEntity] {
     var groupedBeerStyles: [StyleGroup] {
-        let styles = compactMap { $0.beerStyle }
+        let styles = compactMap(\.beerStyle)
         let uniqueStyles = Set(styles)
         let grouped = Dictionary(grouping: uniqueStyles) { style -> String in
             let components = style.components(separatedBy: " - ")

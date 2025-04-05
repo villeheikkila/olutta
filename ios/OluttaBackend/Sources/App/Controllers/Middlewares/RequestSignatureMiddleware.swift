@@ -10,15 +10,18 @@ public struct RequestSignatureMiddleware<Context: RequestContext>: RouterMiddlew
     private let signatureService: SignatureService
 
     public init(secretKey: String) {
-        self.signatureService = SignatureService(secretKey: secretKey)
+        signatureService = SignatureService(secretKey: secretKey)
     }
 
     public func handle(_ request: Request, context: Context, next: (Request, Context) async throws -> Response) async throws -> Response {
         let buffer = try await request.body.collect(upTo: 1024 * 1024)
         let data = Data(buffer.readableBytesView)
+        let authority = if let port = request.uri.port, let host = request.uri.host { "\(host):\(port)" } else { request.uri.host }
         do {
             try signatureService.verifySignature(
                 method: request.method,
+                scheme: nil,
+                authority: nil,
                 path: request.uri.path,
                 headers: request.headers,
                 body: data,

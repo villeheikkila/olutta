@@ -17,13 +17,15 @@ public extension HTTPField.Name {
 
 public struct SignatureService: Sendable {
     private let symmetricKey: SymmetricKey
-    
+
     public init(secretKey: String) {
-        self.symmetricKey = SymmetricKey(data: secretKey.data(using: .utf8)!)
+        symmetricKey = SymmetricKey(data: secretKey.data(using: .utf8)!)
     }
-    
+
     public func createSignature(
         method: HTTPRequest.Method,
+        scheme: String?,
+        authority: String?,
         path: String,
         headers: HTTPFields,
         body: Data?
@@ -39,15 +41,19 @@ public struct SignatureService: Sendable {
         }
         let signature = try createSignatureInternal(
             method: method,
+            scheme: scheme,
+            authority: authority,
             path: path,
             headers: modifiedHeaders,
             bodyHash: bodyHash
         )
         return (signature, bodyHash)
     }
-    
+
     public func verifySignature(
         method: HTTPRequest.Method,
+        scheme: String?,
+        authority: String?,
         path: String,
         headers: HTTPFields,
         body: Data
@@ -66,6 +72,8 @@ public struct SignatureService: Sendable {
         }
         let computedSignature = try createSignatureInternal(
             method: method,
+            scheme: scheme,
+            authority: authority,
             path: path,
             headers: headers,
             bodyHash: headers[.bodyHash]
@@ -74,15 +82,23 @@ public struct SignatureService: Sendable {
             throw .invalidSignature
         }
     }
-    
+
     private func createSignatureInternal(
         method: HTTPRequest.Method,
+        scheme: String?,
+        authority: String?,
         path: String,
         headers: HTTPFields,
         bodyHash: String?
     ) throws(SignatureError) -> String {
         var signatureComponents = [String]()
         signatureComponents.append(method.rawValue)
+        if let scheme {
+            signatureComponents.append(scheme)
+        }
+        if let authority {
+            signatureComponents.append(authority)
+        }
         signatureComponents.append(path)
         let ignoredHeaders: Set<HTTPField.Name> = [
             .accept,
@@ -90,7 +106,7 @@ public struct SignatureService: Sendable {
             .acceptLanguage,
             .acceptEncoding,
             .connection,
-            .requestSignature
+            .requestSignature,
         ]
         for field in headers {
             if !ignoredHeaders.contains(field.name) {

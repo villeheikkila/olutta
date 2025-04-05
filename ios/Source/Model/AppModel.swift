@@ -1,10 +1,10 @@
 import ClusterMap
-import MapKit
-import SwiftUI
 import CryptoKit
-import OluttaShared
 import HTTPTypes
 import HTTPTypesFoundation
+import MapKit
+import OluttaShared
+import SwiftUI
 
 struct AlkoStoreEntity: Codable {
     let id: UUID
@@ -18,13 +18,12 @@ struct AlkoStoreEntity: Codable {
     let outletType: String
 }
 
-
 @Observable
 class AppModel {
     var data: ResponseEntity?
     var isLoading = true
     var error: Error?
-    var s: [AlkoStoreEntity] = []
+    var s: [OluttaShared.StoreEntity] = []
 
     var stores: [StoreEntity] {
         guard let data else { return [] }
@@ -44,51 +43,20 @@ class AppModel {
             data.beers[beerId]
         }
     }
-    
+
     func loadStores() async {
         isLoading = true
         let startTime = Date()
-        let urlString = "http://localhost:3000/v1/stores"
-        guard let url = URL(string: urlString) else {
-            isLoading = false
-            return
-        }
+
         do {
-            var httpFields = HTTPFields()
-            httpFields.append(.init(name: .init("Content-Type")!, value: "application/json"))
-            let signatureService = SignatureService(secretKey: "a1b2c3d4e5f6g7h8i9j0k")
-            let signatureResult = try signatureService.createSignature(
-                method: .get,
-                path: url.path,
-                headers: httpFields,
-                body: nil
+            let httpClient = HTTPClient(
+                baseURL: URL(string: "http://localhost:3000")!,
+                secretKey: "a1b2c3d4e5f6g7h8i9j0k"
             )
-            httpFields.append(.init(name: .requestSignature, value: signatureResult.signature))
-            if let bodyHash = signatureResult.bodyHash {
-                httpFields.append(.init(name: .bodyHash, value: bodyHash))
-            }
-            let httpRequest = HTTPRequest(
-                method: .get,
-                scheme: url.scheme,
-                authority: url.host != nil ? "\(url.host!):\(url.port ?? 3000)" : nil,
-                path: url.path,
-                headerFields: httpFields
-            )
-            let request = URLRequest(httpRequest: httpRequest)!
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let httpResponse = response as? HTTPURLResponse {
-                print("Response status code: \(httpResponse.statusCode)")
-            }
-            if let responseText = String(data: data, encoding: .utf8) {
-                print("Response as text:")
-                print(responseText)
-            } else {
-                print("Could not convert response data to text")
-            }
-            let decoder = JSONDecoder()
-            let r = try decoder.decode([AlkoStoreEntity].self, from: data)
+            let stores: [OluttaShared.StoreEntity] = try await httpClient.get(path: "/v1/stores")
+            print("Fetched \(stores) stores")
             let fetchDuration = Date().timeIntervalSince(startTime)
-            s = r
+            s = stores
             print("Fetch completed in \(String(format: "%.2f", fetchDuration)) seconds")
             isLoading = false
         } catch {
