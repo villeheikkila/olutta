@@ -1,6 +1,7 @@
 import ClusterMap
 import ClusterMapSwiftUI
 import MapKit
+import OluttaShared
 import SwiftUI
 
 struct StoreMap: View {

@@ -4,6 +4,7 @@ import HTTPTypes
 import HTTPTypesFoundation
 import MapKit
 import OluttaShared
+import OSLog
 import SwiftUI
 
 struct AlkoStoreEntity: Codable {
@@ -20,14 +21,15 @@ struct AlkoStoreEntity: Codable {
 
 @Observable
 class AppModel {
+    let logger = Logger(subsystem: "", category: "AppModel")
     var data: ResponseEntity?
     var isLoading = true
     var error: Error?
-    var s: [OluttaShared.StoreEntity] = []
+    var stores: [StoreEntity] = []
+    let httpClient: HTTPClient
 
-    var stores: [StoreEntity] {
-        guard let data else { return [] }
-        return data.stores.values.sorted { $0.name < $1.name }
+    init(httpClient: HTTPClient) {
+        self.httpClient = httpClient
     }
 
     var webStoreItems: [BeerEntity] {
@@ -37,55 +39,15 @@ class AppModel {
         }.sorted { ($0.rating ?? 0) > ($1.rating ?? 0) }
     }
 
-    func getBeersForStore(store: StoreEntity) -> [BeerEntity] {
-        guard let data else { return [] }
-        return store.beers.compactMap { beerId in
-            data.beers[beerId]
-        }
-    }
-
-    func loadStores() async {
+    func initialize() async {
         isLoading = true
-        let startTime = Date()
-
         do {
-            let httpClient = HTTPClient(
-                baseURL: URL(string: "http://localhost:3000")!,
-                secretKey: "a1b2c3d4e5f6g7h8i9j0k"
-            )
-            let stores: [OluttaShared.StoreEntity] = try await httpClient.get(endpoint: .stores)
-            print("Fetched \(stores) stores")
-            let fetchDuration = Date().timeIntervalSince(startTime)
-            s = stores
-            print("Fetch completed in \(String(format: "%.2f", fetchDuration)) seconds")
+            stores = try await httpClient.get(endpoint: .stores)
             isLoading = false
         } catch {
-            print("Error: \(error)")
-            print("Error details: \(error.localizedDescription)")
+            logger.error("failed to load stores: \(error.localizedDescription)")
             self.error = error
             isLoading = false
-        }
-    }
-
-    func fetchBeerStoreData() async {
-        isLoading = true
-        let startTime = Date()
-
-        guard let url = URL(string: "https://zitrqsmhoedlmujospzt.supabase.co/functions/v1/query-alko-beers") else {
-            return
-        }
-
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let decoder = JSONDecoder()
-            let response = try decoder.decode(ResponseEntity.self, from: data)
-            self.data = response
-            let fetchDuration = Date().timeIntervalSince(startTime)
-            print("Fetch completed in \(String(format: "%.2f", fetchDuration)) seconds")
-            isLoading = false
-        } catch {
-            print(error)
-            self.error = error
         }
     }
 
@@ -95,10 +57,9 @@ class AppModel {
     private let clusterManager = ClusterManager<StoreAnnotation>()
 
     func initializeClusters() async {
-        guard let data else { return }
-        let annotations = data.stores.values.map { store in
+        let annotations = stores.map { store in
             StoreAnnotation(
-                id: store.id,
+                id: store.id.uuidString,
                 coordinate: store.location,
                 store: store
             )

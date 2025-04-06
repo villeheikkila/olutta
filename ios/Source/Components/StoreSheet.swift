@@ -1,3 +1,4 @@
+import OluttaShared
 import SwiftUI
 
 struct StoreSheet: View {
@@ -13,7 +14,7 @@ struct StoreSheet: View {
                 if let store = selectedStore {
                     StoreDetailView(
                         navigationTitle: store.name,
-                        beers: appModel.getBeersForStore(store: store),
+                        beers: [],
                         searchText: $searchText,
                         isPresented: $isPresented,
                         onClose: {

@@ -3,7 +3,6 @@ import MapKit
 
 struct ResponseEntity: Codable {
     let beers: [String: BeerEntity]
-    let stores: [String: StoreEntity]
     let webstore: [String: WebstoreAvailabilityEntity]
 }
 
@@ -81,34 +80,6 @@ struct StyleGroup {
     let category: String
     let categoryCount: Int
     let styles: [(name: String, count: Int)]
-}
-
-struct StoreEntity: Codable, Identifiable, Hashable {
-    let id: String
-    let name: String
-    let address: String
-    let city: String
-    let postalCode: String
-    let latitude: Double
-    let longitude: Double
-    let mapkitId: String?
-    let beers: [String]
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case name
-        case address
-        case city
-        case postalCode = "postal_code"
-        case latitude
-        case longitude
-        case mapkitId = "mapkit_id"
-        case beers
-    }
-
-    var location: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-    }
 }
 
 struct WebstoreAvailabilityEntity: Codable {

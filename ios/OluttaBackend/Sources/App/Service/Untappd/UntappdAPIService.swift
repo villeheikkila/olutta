@@ -22,9 +22,7 @@ final class UntappdService: Sendable {
         self.httpClient = httpClient
         decoder = JSONDecoder()
         self.clientId = clientId
-
         self.clientSecret = clientSecret
-
         self.appName = appName
     }
 

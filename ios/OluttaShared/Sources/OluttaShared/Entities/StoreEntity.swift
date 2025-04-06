@@ -1,6 +1,6 @@
 import Foundation
 
-public struct StoreEntity: Codable {
+public struct StoreEntity: Codable, Hashable, Identifiable {
     public let id: UUID
     public let alkoStoreId: String
     public let name: String

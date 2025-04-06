@@ -1,10 +1,13 @@
+import CoreLocation
 import CryptoKit
 import Foundation
 import HTTPTypes
 import HTTPTypesFoundation
 import OluttaShared
+import OSLog
 
 final class HTTPClient {
+    private let logger: Logger
     private let baseURL: URL
     private let session: URLSession
     private let signatureService: SignatureService
@@ -12,7 +15,14 @@ final class HTTPClient {
     private let decoder: JSONDecoder
     private let defaultHeaders: [HTTPField]
 
-    init(baseURL: URL, secretKey: String, defaultHeaders: [HTTPField] = [], session: URLSession = .shared) {
+    init(
+        baseURL: URL,
+        secretKey: String,
+        defaultHeaders: [HTTPField] = [],
+        session: URLSession = .shared,
+        shouldLogRequestDuration _: Bool = false
+    ) {
+        logger = Logger(subsystem: "", category: "HTTPClient")
         self.baseURL = baseURL
         self.session = session
         self.defaultHeaders = defaultHeaders
@@ -28,6 +38,8 @@ final class HTTPClient {
         headers: [HTTPField] = [],
         body: Data? = nil
     ) async throws -> (Data, HTTPResponse) {
+        let startTime = Date()
+
         var urlComponents = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: true)!
         if let queryItems, !queryItems.isEmpty {
             urlComponents.queryItems = queryItems
@@ -61,7 +73,10 @@ final class HTTPClient {
             path: path + (urlComponents.query.map { "?\($0)" } ?? ""),
             headerFields: httpFields,
         )
-        return try await session.data(for: httpRequest)
+        let result = try await session.data(for: httpRequest)
+        let duration = Date().timeIntervalSince(startTime)
+        logger.info("Request to \(method.rawValue) \(path) completed in \(String(format: "%.3f", duration))s")
+        return result
     }
 
     func get<T: Decodable>(
