@@ -53,7 +53,7 @@ class AppModel {
                 baseURL: URL(string: "http://localhost:3000")!,
                 secretKey: "a1b2c3d4e5f6g7h8i9j0k"
             )
-            let stores: [OluttaShared.StoreEntity] = try await httpClient.get(path: "/v1/stores")
+            let stores: [OluttaShared.StoreEntity] = try await httpClient.get(endpoint: .stores)
             print("Fetched \(stores) stores")
             let fetchDuration = Date().timeIntervalSince(startTime)
             s = stores

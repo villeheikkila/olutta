@@ -6,23 +6,22 @@ import OluttaShared
 import PostgresNIO
 
 struct AppController {
-    let logger: Logger
     let pg: PostgresClient
     let persist: RedisPersistDriver
     let alkoRepository: AlkoRepository
 
     var endpoints: RouteCollection<AppRequestContext> {
         RouteCollection(context: AppRequestContext.self)
-            .get("stores", use: stores)
+            .get(.stores, use: stores)
     }
 }
 
 extension AppController {
-    func stores(request _: Request, context _: some RequestContext) async throws -> [StoreEntity] {
+    func stores(request _: Request, context: some RequestContext) async throws -> [StoreEntity] {
         let key = "stores::v2"
         let cachedValue = try await persist.get(key: key, as: [StoreEntity].self)
         if let cachedValue {
-            logger.info("returning cached stores")
+            context.logger.info("returning cached stores")
             return cachedValue
         }
         let stores = try await pg.withTransaction { tx in

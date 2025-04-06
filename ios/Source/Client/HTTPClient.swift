@@ -6,13 +6,19 @@ import OluttaShared
 
 final class HTTPClient {
     private let baseURL: URL
-    private let secretKey: String
     private let session: URLSession
+    private let signatureService: SignatureService
+    private let encoder: JSONEncoder
+    private let decoder: JSONDecoder
+    private let defaultHeaders: [HTTPField]
 
-    init(baseURL: URL, secretKey: String, session: URLSession = .shared) {
+    init(baseURL: URL, secretKey: String, defaultHeaders: [HTTPField] = [], session: URLSession = .shared) {
         self.baseURL = baseURL
-        self.secretKey = secretKey
         self.session = session
+        self.defaultHeaders = defaultHeaders
+        signatureService = .init(secretKey: secretKey)
+        encoder = .init()
+        decoder = .init()
     }
 
     func request(
@@ -31,10 +37,10 @@ final class HTTPClient {
         }
         var httpFields = HTTPFields()
         httpFields.append(.init(name: .contentType, value: "application/json"))
+        httpFields.append(.init(name: .requestId, value: UUID.v7.uuidString))
         for header in headers {
             httpFields.append(header)
         }
-        let signatureService = SignatureService(secretKey: secretKey)
         let authority = if let port = url.port, let host = url.host { "\(host):\(port)" } else { url.host }
         let signatureResult = try signatureService.createSignature(
             method: method,
@@ -73,7 +79,6 @@ final class HTTPClient {
             throw HTTPClientError.httpError(code: response.status.code, data: data)
         }
         do {
-            let decoder = JSONDecoder()
             return try decoder.decode(T.self, from: data)
         } catch {
             throw HTTPClientError.decodingFailed(error)
@@ -86,7 +91,6 @@ final class HTTPClient {
         queryItems: [URLQueryItem]? = nil,
         headers: [HTTPField] = []
     ) async throws -> T {
-        let encoder = JSONEncoder()
         let bodyData = try encoder.encode(body)
         let (data, response) = try await request(
             method: .post,
@@ -99,11 +103,54 @@ final class HTTPClient {
             throw HTTPClientError.httpError(code: response.status.code, data: data)
         }
         do {
-            let decoder = JSONDecoder()
             return try decoder.decode(T.self, from: data)
         } catch {
             throw HTTPClientError.decodingFailed(error)
         }
+    }
+}
+
+extension HTTPClient {
+    func request(
+        method: HTTPRequest.Method,
+        endpoint: APIEndpoint,
+        queryItems: [URLQueryItem]? = nil,
+        headers: [HTTPField] = [],
+        body: Data? = nil
+    ) async throws -> (Data, HTTPResponse) {
+        try await request(
+            method: method,
+            path: endpoint.path,
+            queryItems: queryItems,
+            headers: headers,
+            body: body
+        )
+    }
+
+    func get<T: Decodable>(
+        endpoint: APIEndpoint,
+        queryItems: [URLQueryItem]? = nil,
+        headers: [HTTPField] = []
+    ) async throws -> T {
+        try await get(
+            path: endpoint.path,
+            queryItems: queryItems,
+            headers: headers
+        )
+    }
+
+    func post<T: Decodable>(
+        endpoint: APIEndpoint,
+        body: some Encodable,
+        queryItems: [URLQueryItem]? = nil,
+        headers: [HTTPField] = []
+    ) async throws -> T {
+        try await post(
+            path: endpoint.path,
+            body: body,
+            queryItems: queryItems,
+            headers: headers
+        )
     }
 }
 

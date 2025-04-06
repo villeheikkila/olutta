@@ -5,6 +5,7 @@ import SwiftUI
 @main
 struct Entrypoint: App {
     @State private var appModel = AppModel()
+    @State private var timer: Timer? = nil
 
     var body: some Scene {
         WindowGroup {

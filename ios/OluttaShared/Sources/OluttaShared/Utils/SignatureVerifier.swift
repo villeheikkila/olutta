@@ -13,6 +13,7 @@ public enum SignatureError: Error {
 public extension HTTPField.Name {
     static let requestSignature = Self("X-Request-Signature")!
     static let bodyHash = Self("X-Body-Hash")!
+    static let requestId = Self("X-Request-ID")!
 }
 
 public struct SignatureService: Sendable {

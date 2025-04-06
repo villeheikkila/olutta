@@ -6,10 +6,11 @@ func buildRouter(ctx: Context) -> Router<AppRequestContext> {
     router.addMiddleware {
         LogRequestsMiddleware(.info)
         RequestSignatureMiddleware(secretKey: ctx.config.requestSignatureSalt)
+        UniqueRequestMiddleware(persist: ctx.persist)
     }
     router.get("/health") { _, _ -> HTTPResponse.Status in
         return .ok
     }
-    router.addRoutes(AppController(logger: ctx.logger, pg: ctx.pg, persist: ctx.persist, alkoRepository: ctx.repositories.alko).endpoints, atPath: "/v1")
+    router.addRoutes(AppController(pg: ctx.pg, persist: ctx.persist, alkoRepository: ctx.repositories.alko).endpoints)
     return router
 }
