@@ -12,7 +12,7 @@ final class UntappdService: Sendable {
     private let appName: String
 
     public init(
-        logger: Logger = Logger(label: "Untappd"),
+        logger: Logger = Logger(label: "untappd"),
         httpClient: HTTPClient = HTTPClient.shared,
         appName: String,
         clientId: String,
@@ -22,7 +22,9 @@ final class UntappdService: Sendable {
         self.httpClient = httpClient
         decoder = JSONDecoder()
         self.clientId = clientId
+
         self.clientSecret = clientSecret
+
         self.appName = appName
     }
 

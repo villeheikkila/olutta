@@ -15,25 +15,9 @@ struct Context: QueueContextProtocol {
     let config: Config
 }
 
-func buildContext(logger: Logger, config: Config) async throws -> Context {
+func buildContext(logger: Logger, config: Config, pgmq: PGMQ, pg: PostgresClient, redis: RedisConnectionPoolService) async throws -> Context {
     let httpClient = HTTPClient.shared
-    let pg = PostgresClient(
-        configuration: .init(
-            host: config.pgHost,
-            port: config.pgPort,
-            username: config.pgUsername,
-            password: config.pgPassword,
-            database: config.pgDatabase,
-            tls: .disable
-        ),
-        backgroundLogger: logger
-    )
-    let redis = try RedisConnectionPoolService(
-        .init(hostname: config.redisHostname, port: config.redisPort),
-        logger: logger
-    )
     let persist = RedisPersistDriver(redisConnectionPoolService: redis)
-    let pgmq = PGMQClient(client: pg)
     let repository = Repositories(logger: logger)
     let service = await Services(logger: logger, httpClient: httpClient, config: config)
     return Context(pgmq: pgmq, pg: pg, redis: redis, persist: persist, logger: logger, services: service, repositories: repository, config: config)

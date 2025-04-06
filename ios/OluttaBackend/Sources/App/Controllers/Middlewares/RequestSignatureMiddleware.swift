@@ -27,9 +27,9 @@ public struct RequestSignatureMiddleware<Context: RequestContext>: RouterMiddlew
             )
             return try await next(request, context)
         } catch {
-            context.logger.error("Signature verification failed: \(error)")
+            context.logger.error("signature verification failed: \(error)")
             // return a generic unauthorized error to the client
-            throw HTTPError(.unauthorized, message: "Invalid request signature")
+            throw HTTPError(.unauthorized, message: "invalid request signature")
         }
     }
 }

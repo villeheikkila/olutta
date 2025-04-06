@@ -120,17 +120,15 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
 
         logger.info("starting QueueManager")
         isRunning = true
-        try await withGracefulShutdownHandler {
+        try await cancelWhenGracefulShutdown {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                for (queueName, queueConfig) in queueHandlers {
+                for (queueName, queueConfig) in await self.queueHandlers {
                     group.addTask {
                         try await self.processQueue(name: queueName, registration: queueConfig)
                     }
                 }
                 try await group.waitForAll()
             }
-        } onGracefulShutdown: {
-            print("Shutting down QueueManager")
         }
     }
 

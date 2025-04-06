@@ -1,6 +1,7 @@
 import AsyncHTTPClient
 import Foundation
 import Hummingbird
+import HummingbirdRedis
 import Logging
 import PGMQ
 @preconcurrency import PostgresNIO
@@ -22,24 +23,37 @@ public func buildApplication(
     )
     logger.info("starting \(args.serverName) server on port \(args.hostname):\(args.port)...")
     let config = buildConfig(args: args, env: env)
-    let context = try await buildContext(logger: logger, config: config)
-    let router = buildRouter(ctx: context)
-    var app = Application(
-        router: router,
+    let postgresClient = PostgresClient(
         configuration: .init(
-            address: .hostname(args.hostname, port: args.port),
-            serverName: args.serverName
+            host: config.pgHost,
+            port: config.pgPort,
+            username: config.pgUsername,
+            password: config.pgPassword,
+            database: config.pgDatabase,
+            tls: .disable
         ),
+        backgroundLogger: logger
+    )
+    let pgmqClient = PGMQClient(client: postgresClient)
+    let redis = try RedisConnectionPoolService(
+        .init(hostname: config.redisHostname, port: config.redisPort),
         logger: logger
     )
-    app.addServices(context.pg)
-    app.addServices(context.redis)
+    let context = try await buildContext(logger: logger, config: config, pgmq: pgmqClient, pg: postgresClient, redis: redis)
+    let router = buildRouter(ctx: context)
     let queueService = PGMQService(context: context, logger: logger, poolConfig: .init(
         maxConcurrentJobs: 3,
         pollInterval: 1
     ))
     await queueService.registerQueue(alkoQueue)
     await queueService.registerQueue(untappdQueue)
-    app.addServices(queueService)
-    return app
+    return Application(
+        router: router,
+        configuration: .init(
+            address: .hostname(args.hostname, port: args.port),
+            serverName: args.serverName
+        ),
+        services: [postgresClient, redis, queueService],
+        logger: logger
+    )
 }
