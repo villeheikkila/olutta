@@ -17,6 +17,10 @@ public struct UniqueRequestMiddleware<Context: RequestContext>: RouterMiddleware
             context.logger.error("missing request ID header")
             throw HTTPError(.badRequest, message: "missing request ID")
         }
+        guard requestId.count == 36 else {
+            context.logger.error("invalid request ID length: \(requestId)")
+            throw HTTPError(.badRequest, message: "request ID must be a valid UUID")
+        }
         do {
             let timestamp = Date().timeIntervalSince1970
             try await persist.create(key: createKey(requestId), value: timestamp)

@@ -10,7 +10,7 @@ struct UntappdRepository: Sendable {
         beer: UntappdBeerResponse
     ) async throws -> UUID {
         let result = try await connection.query("""
-            INSERT INTO untappd_beers (
+            INSERT INTO products_untappd (
                 bid, beer_name, beer_label, beer_label_hd, beer_abv, beer_ibu,
                 beer_description, beer_style, is_in_production, beer_slug, is_homebrew,
                 created_at, rating_count, rating_score,
@@ -65,6 +65,31 @@ struct UntappdRepository: Sendable {
                 brewery_lng = EXCLUDED.brewery_lng
             RETURNING id
         """, logger: logger)
+        for try await id in result.decode(UUID.self) {
+            return id
+        }
+        throw RepositoryError.noData
+    }
+
+    @discardableResult
+    func createProductMapping(
+        _ connection: PostgresConnection, alkoProductId: UUID, untappdProductId: UUID, confidenceScore: Double?, isVerified: Bool
+    ) async throws -> UUID {
+        let result = try await connection.query("""
+            INSERT INTO products_alko_untappd_mapping (
+                alko_product_id, untappd_product_id, confidence_score, is_verified
+            )
+            VALUES (
+                \(alkoProductId), \(untappdProductId), 
+                \(confidenceScore), \(isVerified)
+            )
+            ON CONFLICT (alko_product_id, untappd_product_id) DO UPDATE SET
+                confidence_score = EXCLUDED.confidence_score,
+                is_verified = EXCLUDED.is_verified,
+                updated_at = now()
+            RETURNING id
+        """, logger: logger)
+
         for try await id in result.decode(UUID.self) {
             return id
         }

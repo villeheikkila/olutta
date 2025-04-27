@@ -22,13 +22,25 @@ let alkoQueue = QueueConfiguration<Context>(
                 ctx.logger.info("updated alko beer records, \(result.count) records updated, \(newBeers) new records")
             }
         case "v1:refresh-availability":
-            guard let typeValue = message.message["id"], let id = typeValue.stringValue else { throw QueueError.invalidPayload }
+            guard let typeValue = message.message["id"], let idString = typeValue.stringValue, let id = UUID(uuidString: idString) else {
+                throw QueueError.invalidPayload
+            }
             try await ctx.pg.withTransaction { tx in
-                let storeAvailability = try await ctx.services.alko.getAvailability(productId: id)
-                let webstoreAvailability = try await ctx.services.alko.getWebstoreAvailability(id: id)
-                let storeAvailabilityResult = try await ctx.repositories.alko.upsertWebstoreInventory(tx, availabilities: webstoreAvailability)
-                let webstoreAvailabilityResult = try await ctx.repositories.alko.upsertStoreInventory(tx, availabilities: storeAvailability)
-                ctx.logger.info("updated alko product availability records", metadata: ["id": .string(id)])
+                let product = try await ctx.repositories.alko.getProductById(tx, id: id)
+                let stores = try await ctx.repositories.alko.getStores(tx)
+                let storeAvailability = try await ctx.services.alko.getAvailability(productId: product.productExternalId)
+                let webstoreAvailability = try await ctx.services.alko.getWebstoreAvailability(id: product.productExternalId)
+                let storeAvailabilityResult = try await ctx.repositories.alko.upsertWebstoreInventory(tx, productId: id, availabilities: webstoreAvailability)
+                let availabilities: [(storeId: UUID, count: String?)] = storeAvailability.compactMap { availability in
+                    let store = stores.first { store in store.alkoStoreId == availability.id }
+                    guard let store else {
+                        ctx.logger.warning("availability found for a store that doesn't exist in the db")
+                        return nil
+                    }
+                    return (storeId: store.id, count: availability.count)
+                }
+                let webstoreAvailabilityResult = try await ctx.repositories.alko.upsertStoreInventory(tx, productId: id, availabilities: availabilities)
+                ctx.logger.info("updated alko product availability records", metadata: ["external_id": .string(product.productExternalId)])
             }
         default:
             ctx.logger.error("unknown message type \(type)")

@@ -7,20 +7,20 @@ struct AlkoRepository: Sendable {
     func getStores(_ connection: PostgresConnection) async throws -> [AlkoStoreEntity] {
         let stream = try await connection.query(
             """
-            SELECT "id", "alko_store_id", "name", "address", "city", 
+            SELECT "id", "store_external_id", "name", "address", "city", 
                    "postal_code", "latitude", "longitude", "outlet_type"
-            FROM alko_stores
+            FROM stores_alko
             """,
             logger: logger
         )
 
         var stores: [AlkoStoreEntity] = []
-        for try await (id, alkoStoreId, name, address, city, postalCode, latitude, longitude)
+        for try await (id, storeExternalId, name, address, city, postalCode, latitude, longitude)
             in stream.decode((UUID, String, String, String, String, String, Double, Double).self, context: .default)
         {
             let store = AlkoStoreEntity(
                 id: id,
-                alkoStoreId: alkoStoreId,
+                alkoStoreId: storeExternalId,
                 name: name,
                 address: address,
                 city: city,
@@ -33,12 +33,62 @@ struct AlkoRepository: Sendable {
         return stores
     }
 
+    func getProductById(
+        _ connection: PostgresConnection,
+        id: UUID
+    ) async throws -> AlkoProductEntity {
+        let result = try await connection.query(
+            """
+                SELECT "id", "product_external_id", "name", "taste", "additional_info", 
+                       "abv", "beer_style_id", "beer_style_name", "beer_substyle_id", 
+                       "country_name", "food_symbol_id", "main_group_id", "price", 
+                       "product_group_id", "product_group_name", "volume", 
+                       "online_availability_datetime_ts", "description", "certificate_id"
+                FROM products_alko
+                WHERE id = \(id)
+            """,
+            logger: logger
+        )
+        for try await (id, externalId, name, taste, additionalInfo, abv, beerStyleId,
+                       beerStyleName, beerSubstyleId, countryName, foodSymbolId, mainGroupId,
+                       price, productGroupId, productGroupName, volume,
+                       onlineAvailabilityDatetimeTs, description, certificateId)
+            in result.decode((UUID, String, String, String?, String?, Double?,
+                              [String], [String], [String]?, String?, [String]?,
+                              [String], Double?, [String], [String], Double?,
+                              Int64?, String?, [String]?).self)
+        {
+            return AlkoProductEntity(
+                id: id,
+                productExternalId: externalId,
+                name: name,
+                taste: taste,
+                additionalInfo: additionalInfo,
+                abv: abv,
+                beerStyleId: beerStyleId,
+                beerStyleName: beerStyleName,
+                beerSubstyleId: beerSubstyleId,
+                countryName: countryName,
+                foodSymbolId: foodSymbolId,
+                mainGroupId: mainGroupId,
+                price: price,
+                productGroupId: productGroupId,
+                productGroupName: productGroupName,
+                volume: volume,
+                onlineAvailabilityDatetimeTs: onlineAvailabilityDatetimeTs,
+                description: description,
+                certificateId: certificateId
+            )
+        }
+        throw RepositoryError.recordNotFound
+    }
+
     func upsertAlkoProducts(
         _ connection: PostgresConnection,
         products: [AlkoSearchProductResponse]
     ) async throws -> [(id: UUID, isNewRecord: Bool)] {
         let columns = [
-            "alko_id",
+            "product_external_id",
             "taste",
             "additional_info",
             "abv",
@@ -84,9 +134,9 @@ struct AlkoRepository: Sendable {
             placeholders.append(placeholder)
         }
         let query = """
-            INSERT INTO alko_product (\(columns.joined(separator: ", ")))
+            INSERT INTO products_alko (\(columns.joined(separator: ", ")))
             VALUES \(placeholders.joined(separator: ", "))
-            ON CONFLICT (alko_id) DO UPDATE SET
+            ON CONFLICT (product_external_id) DO UPDATE SET
                 taste = EXCLUDED.taste,
                 additional_info = EXCLUDED.additional_info,
                 abv = EXCLUDED.abv,
@@ -117,7 +167,7 @@ struct AlkoRepository: Sendable {
 
     func upsertStores(_ connection: PostgresConnection, stores: [AlkoStoreResponse]) async throws -> [(id: String, isNewRecord: Bool)] {
         let columns = [
-            "alko_store_id",
+            "store_external_id",
             "name",
             "address",
             "city",
@@ -143,16 +193,17 @@ struct AlkoRepository: Sendable {
             placeholders.append(placeholder)
         }
         let query = """
-            INSERT INTO alko_stores (\(columns.joined(separator: ", ")))
+            INSERT INTO stores_alko (\(columns.joined(separator: ", ")))
             VALUES \(placeholders.joined(separator: ", "))
-            ON CONFLICT (alko_store_id) DO UPDATE SET
+            ON CONFLICT (store_external_id) DO UPDATE SET
                 name = EXCLUDED.name,
                 address = EXCLUDED.address,
                 city = EXCLUDED.city,
                 postal_code = EXCLUDED.postal_code,
                 latitude = EXCLUDED.latitude,
                 longitude = EXCLUDED.longitude,
-                outlet_type = EXCLUDED.outlet_type
+                outlet_type = EXCLUDED.outlet_type,
+                updated_at = NOW()
             RETURNING id, (xmax = 0) AS is_new_record;
         """
         let result = try await connection.query(.init(unsafeSQL: query, binds: bindings), logger: logger)
@@ -163,9 +214,9 @@ struct AlkoRepository: Sendable {
         return storeResults
     }
 
-    func upsertWebstoreInventory(_ connection: PostgresConnection, availabilities: [AlkoWebAvailabilityResponse]) async throws -> [(id: UUID, isNewRecord: Bool)] {
+    func upsertWebstoreInventory(_ connection: PostgresConnection, productId: UUID, availabilities: [AlkoWebAvailabilityResponse]) async throws -> [(id: UUID, isNewRecord: Bool)] {
         let columns = [
-            "alko_product_id",
+            "product_id",
             "status_code",
             "message_code",
             "estimated_availability_date",
@@ -179,10 +230,10 @@ struct AlkoRepository: Sendable {
         var bindings: PostgresBindings = .init()
         var placeholders: [String] = []
         for (index, availability) in availabilities.enumerated() {
-            bindings.append(UUID(uuidString: availability.productId) ?? UUID()) // Convert String to UUID
+            bindings.append(productId)
             bindings.append(availability.statusCode)
             bindings.append(availability.messageCode)
-            bindings.append(availability.estimatedAvailabilityDate) // This is optional
+            bindings.append(availability.estimatedAvailabilityDate)
             bindings.append(availability.delivery?.min)
             bindings.append(availability.delivery?.max)
             bindings.append(availability.status.en)
@@ -195,9 +246,9 @@ struct AlkoRepository: Sendable {
             placeholders.append(placeholder)
         }
         let query = """
-            INSERT INTO alko_webstore_inventory (\(columns.joined(separator: ", ")))
+            INSERT INTO availability_alko_webstore (\(columns.joined(separator: ", ")))
             VALUES \(placeholders.joined(separator: ", "))
-            ON CONFLICT (alko_product_id) DO UPDATE SET
+            ON CONFLICT (product_id) DO UPDATE SET
                 status_code = EXCLUDED.status_code,
                 message_code = EXCLUDED.message_code,
                 estimated_availability_date = EXCLUDED.estimated_availability_date,
@@ -208,9 +259,8 @@ struct AlkoRepository: Sendable {
                 status_sv = EXCLUDED.status_sv,
                 status_message = EXCLUDED.status_message,
                 updated_at = now()
-            RETURNING alko_product_id, (xmax = 0) AS is_new_record;
+            RETURNING product_id, (xmax = 0) AS is_new_record;
         """
-
         let result = try await connection.query(.init(unsafeSQL: query, binds: bindings), logger: logger)
         var inventoryResults: [(id: UUID, isNewRecord: Bool)] = []
         for try await (id, isNewRecord) in result.decode((UUID, Bool).self) {
@@ -221,20 +271,21 @@ struct AlkoRepository: Sendable {
 
     func upsertStoreInventory(
         _ connection: PostgresConnection,
-        availabilities: [AlkoStoreAvailabilityResponse]
+        productId: UUID,
+        availabilities: [(storeId: UUID, count: String?)]
     ) async throws -> [(id: (UUID, UUID), isNewRecord: Bool)] {
         let columns = [
-            "alko_store_id",
-            "alko_product_id",
+            "store_id",
+            "product_id",
             "product_count",
         ]
         var bindings: PostgresBindings = .init()
         var placeholders: [String] = []
 
         for (index, availability) in availabilities.enumerated() {
-            bindings.append(availability.store.id)
-            bindings.append(availability.id)
-            bindings.append(availability.availability)
+            bindings.append(availability.storeId)
+            bindings.append(productId)
+            bindings.append(availability.count)
 
             let base = index * columns.count
             let paramIndices = (1 ... columns.count).map { "$\(base + $0)" }
@@ -243,13 +294,13 @@ struct AlkoRepository: Sendable {
         }
 
         let query = """
-            INSERT INTO alko_store_inventory (\(columns.joined(separator: ", ")))
+            INSERT INTO availability_alko_store (\(columns.joined(separator: ", ")))
             VALUES \(placeholders.joined(separator: ", "))
-            ON CONFLICT (alko_store_id, alko_product_id) DO UPDATE SET
-                product_count = EXCLUDED.product_count
-            RETURNING alko_store_id, alko_product_id, (xmax = 0) AS is_new_record;
+            ON CONFLICT (store_id, product_id) DO UPDATE SET
+                product_count = EXCLUDED.product_count,
+                updated_at = NOW()
+            RETURNING store_id, product_id, (xmax = 0) AS is_new_record;
         """
-
         let result = try await connection.query(.init(unsafeSQL: query, binds: bindings), logger: logger)
         var inventoryResults: [(id: (UUID, UUID), isNewRecord: Bool)] = []
         for try await (storeId, productId, isNewRecord) in result.decode((UUID, UUID, Bool).self) {
@@ -267,7 +318,7 @@ struct AlkoRepository: Sendable {
         untappdId: UUID
     ) async throws {
         let result = try await connection.query("""
-            UPDATE alko_product 
+            UPDATE products_alko 
             SET untappd_id = \(untappdId)
             WHERE id = \(alkoProductId)
             RETURNING id

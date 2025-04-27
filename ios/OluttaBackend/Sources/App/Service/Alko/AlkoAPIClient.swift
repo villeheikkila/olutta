@@ -29,7 +29,7 @@ final class AlkoService: Sendable {
     }
 
     public func getWebstoreAvailability(id: String) async throws(AlkoError) -> [AlkoWebAvailabilityResponse] {
-        try await request(endpoint: "/v1/webshopAvailability/products=\(id)&lang=fi")
+        try await request(endpoint: "/v1/webshopAvailability?products=\(id)&lang=fi")
     }
 
     public func getProduct(id: String) async throws(AlkoError) -> AlkoProductResponse {
