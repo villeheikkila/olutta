@@ -12,7 +12,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/hummingbird-project/hummingbird.git", from: "2.8.0"),
         .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.23.0"),
-        .package(url: "https://github.com/villeheikkila/swift-log-telegram", from: "0.0.1"),
+        .package(url: "https://github.com/villeheikkila/swift-log-telegram", from: "0.0.3"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.2"),
         .package(url: "https://github.com/villeheikkila/pgmq-swift", .upToNextMajor(from: "0.0.8")),

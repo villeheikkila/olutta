@@ -1,5 +1,5 @@
 {
-  "originHash" : "aacbbaf70e61ab5146d257a0693658a541beb9a4bf677b745ad440f125b289df",
+  "originHash" : "7d03a99b23bbb4640a095a6d275a7049cb3ece291caa4ef108ebd497ca714bd4",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -177,8 +177,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/villeheikkila/swift-log-telegram",
       "state" : {
-        "revision" : "fcb4b5a5a8e68f4d32d3104847276a452fe4669f",
-        "version" : "0.0.1"
+        "revision" : "820b9ddcf30129e0a8ebf1cb34e434e44ed1ab5d",
+        "version" : "0.0.3"
       }
     },
     {
