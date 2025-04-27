@@ -1,31 +1,24 @@
 FROM --platform=$BUILDPLATFORM swift:6.1.0 AS build
 WORKDIR /workspace
 
-# Install Swift static SDK
 RUN swift sdk install \
-    https://download.swift.org/development/static-sdk/swift-DEVELOPMENT-SNAPSHOT-2025-01-31-a/swift-DEVELOPMENT-SNAPSHOT-2025-01-31-a_static-linux-0.0.1.artifactbundle.tar.gz \
-    --checksum cd1b0de0bcc809692e803a078800b9d577c0eefbd2b3d2cfd24e53f019ca5de3
+    https://download.swift.org/swift-6.1-branch/static-sdk/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-25-a/swift-6.1-DEVELOPMENT-SNAPSHOT-2025-03-25-a_static-linux-0.0.1.artifactbundle.tar.gz \
+    --checksum 2b73c30ec402f443857e6cd2ac06b8525f186e889a7a727af05601629148fe6a
 
-# Copy package manifest files
-COPY ./Package.swift ./Package.resolved /workspace/
+RUN mkdir -p /workspace/OluttaBackend
+COPY ./OluttaShared /workspace/OluttaShared/
+COPY ./OluttaBackend/Package.swift ./OluttaBackend/Package.resolved /workspace/OluttaBackend/
+COPY ./OluttaBackend/build_scripts /workspace/OluttaBackend/scripts
+COPY ./OluttaBackend/Sources /workspace/OluttaBackend/Sources
+COPY ./OluttaBackend/Tests /workspace/OluttaBackend/Tests
 
-# Create directory for the shared package
-RUN mkdir -p /workspace/OluttaShared
+WORKDIR /workspace/OluttaBackend
 
-# Copy the shared package
-COPY ../OluttaShared /workspace/OluttaShared/
-
-# Resolve dependencies with caching
 RUN --mount=type=cache,target=/workspace/.spm-cache,id=spm-cache \
     swift package \
         --cache-path /workspace/.spm-cache \
         --only-use-versions-from-resolved-file \
         resolve
-
-# Copy source files
-COPY ./build_scripts /workspace/scripts
-COPY ./Sources /workspace/Sources
-COPY ./Tests /workspace/Tests
 
 ARG TARGETPLATFORM
 RUN --mount=type=cache,target=/workspace/.build,id=build-$TARGETPLATFORM \
@@ -40,5 +33,5 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y postgresql-client && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /workspace/dist/OluttaBackend /usr/local/bin/OluttaBackend
+COPY --from=build /workspace/OluttaBackend/dist/OluttaBackend /usr/local/bin/OluttaBackend
 ENTRYPOINT ["/usr/local/bin/OluttaBackend"]

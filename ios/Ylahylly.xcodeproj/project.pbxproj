@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5C0922412DBE906F00001B01 /* OluttaShared in Frameworks */ = {isa = PBXBuildFile; productRef = 5C9F75CA2DA06CCB000FD9A9 /* OluttaShared */; };
 		5C3326132DA0FE0B008C1C6C /* OluttaShared in Frameworks */ = {isa = PBXBuildFile; productRef = 5C3326122DA0FE0B008C1C6C /* OluttaShared */; };
 		5CE27B3D2D4031F400578072 /* ClusterMap in Frameworks */ = {isa = PBXBuildFile; productRef = 5CE27B3C2D4031F400578072 /* ClusterMap */; };
 		5CE27B3F2D4031F400578072 /* ClusterMapSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5CE27B3E2D4031F400578072 /* ClusterMapSwiftUI */; };
@@ -16,6 +17,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		5C09226B2DBEBF2F00001B01 /* Dockerfile */ = {isa = PBXFileReference; lastKnownFileType = text; path = Dockerfile; sourceTree = "<group>"; };
 		5C33260E2DA0FD8E008C1C6C /* OluttaBackend */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = OluttaBackend; sourceTree = "<group>"; };
 		5C33260F2DA0FD9F008C1C6C /* OluttaShared */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = OluttaShared; sourceTree = "<group>"; };
 		5C80F5F82D3D88220040F4B8 /* Ylahylly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ylahylly.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -39,6 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5C0922412DBE906F00001B01 /* OluttaShared in Frameworks */,
 				5C3326132DA0FE0B008C1C6C /* OluttaShared in Frameworks */,
 				5CE27B412D40389200578072 /* NukeUI in Frameworks */,
 				5CE27B462D417C9E00578072 /* SwiftUIKit in Frameworks */,
@@ -61,6 +64,7 @@
 		5C80F5EF2D3D88220040F4B8 = {
 			isa = PBXGroup;
 			children = (
+				5C09226B2DBEBF2F00001B01 /* Dockerfile */,
 				5C33260F2DA0FD9F008C1C6C /* OluttaShared */,
 				5C33260E2DA0FD8E008C1C6C /* OluttaBackend */,
 				5CAE0C8B2D453C83007AF7AC /* Configuration */,

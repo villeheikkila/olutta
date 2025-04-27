@@ -1,4 +1,5 @@
 import Foundation
+import RegexBuilder
 
 let untappdQueue = QueueConfiguration<Context>(
     name: "untappd",
@@ -19,7 +20,20 @@ let untappdQueue = QueueConfiguration<Context>(
             }
             try await ctx.pg.withTransaction { tx in
                 let alkoProduct = try await ctx.repositories.alko.getProductById(tx, id: id)
-                let query = alkoProduct.name.replacingOccurrences(of: "tölkki", with: "", options: .caseInsensitive).trimmingCharacters(in: .whitespacesAndNewlines)
+                let wordsToRemove = ["tölkki"]
+                var query = alkoProduct.name
+                for word in wordsToRemove {
+                    query = query.replacingOccurrences(of: word, with: "", options: .caseInsensitive)
+                }
+                let numberPackPattern = Regex {
+                    OneOrMore(.digit)
+                    ZeroOrMore(.whitespace)
+                    "-"
+                    ZeroOrMore(.whitespace)
+                    "pack"
+                }.ignoresCase()
+                query = query.replacing(numberPackPattern, with: "")
+                query = query.trimmingCharacters(in: .whitespacesAndNewlines)
                 let products = try await ctx.services.untappd.searchBeer(query: query)
                 guard let bid = products.response.beers.items.first?.beer.bid else {
                     ctx.logger.info("no beers found for product", metadata: ["id": .init(stringLiteral: id.description), query: .init(stringLiteral: query)])
