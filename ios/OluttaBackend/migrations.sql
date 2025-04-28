@@ -190,4 +190,27 @@ $$
   CREATE INDEX idx_mapping_untappd_product ON products_alko_untappd_mapping(untappd_product_id);
 $$);
 
+SELECT apply_migration('alter_confidence_score_to_not_null_int',
+$$
+  UPDATE products_alko_untappd_mapping
+  SET confidence_score = 0
+  WHERE confidence_score IS NULL;
+  ALTER TABLE products_alko_untappd_mapping
+  ALTER COLUMN confidence_score TYPE INTEGER USING (confidence_score::INTEGER),
+  ALTER COLUMN confidence_score SET NOT NULL;
+$$);
+
+SELECT apply_migration('add_reasoning_to_mapping',
+$$
+  ALTER TABLE products_alko_untappd_mapping
+  ADD COLUMN reasoning TEXT;
+  UPDATE products_alko_untappd_mapping
+  SET reasoning = 'no reasoning provided'
+  WHERE reasoning IS NULL;
+  ALTER TABLE products_alko_untappd_mapping
+  ALTER COLUMN reasoning SET NOT NULL;  
+  ALTER TABLE products_alko_untappd_mapping
+  DROP COLUMN IF EXISTS notes;
+$$);
+
 commit;

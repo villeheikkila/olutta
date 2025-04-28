@@ -18,6 +18,7 @@ let package = Package(
         .package(url: "https://github.com/villeheikkila/pgmq-swift", .upToNextMajor(from: "0.0.8")),
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.24.2"),
         .package(url: "https://github.com/hummingbird-project/hummingbird-redis.git", from: "2.0.0"),
+        .package(url: "https://github.com/MacPaw/OpenAI.git", branch: "main"),
         .package(name: "OluttaShared", path: "../OluttaShared"),
     ],
     targets: [
@@ -32,6 +33,7 @@ let package = Package(
                 .product(name: "PGMQ", package: "pgmq-swift"),
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
                 .product(name: "HummingbirdRedis", package: "hummingbird-redis"),
+                .product(name: "OpenAI", package: "OpenAI"),
                 .product(name: "OluttaShared", package: "OluttaShared"),
             ],
             path: "Sources"

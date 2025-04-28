@@ -3,6 +3,7 @@ import Foundation
 import Hummingbird
 import HummingbirdRedis
 import Logging
+import OpenAI
 import PGMQ
 @preconcurrency import PostgresNIO
 import RegexBuilder

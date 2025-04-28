@@ -7,45 +7,45 @@ struct UntappdRepository: Sendable {
     @discardableResult
     func upsertBeer(
         _ connection: PostgresConnection,
-        beer: UntappdBeerResponse
+        beer: UntappdBeerResponse.Beer
     ) async throws -> UUID {
         let result = try await connection.query("""
             INSERT INTO products_untappd (
-                bid, beer_name, beer_label, beer_label_hd, beer_abv, beer_ibu,
-                beer_description, beer_style, is_in_production, beer_slug, is_homebrew,
-                created_at, rating_count, rating_score,
+                product_external_id, name, label_url, label_hd_url, abv, ibu,
+                description, style, is_in_production, slug, is_homebrew,
+                external_created_at, rating_count, rating_score,
                 stats_total_count, stats_monthly_count, stats_total_user_count, stats_user_count,
                 brewery_id, brewery_name, brewery_slug, brewery_type, brewery_page_url,
-                brewery_label, brewery_country_name, brewery_city, brewery_state,
+                brewery_label, brewery_country, brewery_city, brewery_state,
                 brewery_lat, brewery_lng
             )
             VALUES (
-                \(beer.beer.bid), \(beer.beer.beerName), \(beer.beer.beerLabel.absoluteString),
-                \(beer.beer.beerLabelHd.absoluteString), \(beer.beer.beerAbv), \(beer.beer.beerIbu),
-                \(beer.beer.beerDescription), \(beer.beer.beerStyle), \(beer.beer.isInProduction),
-                \(beer.beer.beerSlug), \(beer.beer.isHomebrew), \(beer.beer.createdAt),
-                \(beer.beer.ratingCount), \(beer.beer.ratingScore),
-                \(beer.beer.stats.totalCount), \(beer.beer.stats.monthlyCount),
-                \(beer.beer.stats.totalUserCount), \(beer.beer.stats.userCount),
-                \(beer.beer.brewery.breweryId), \(beer.beer.brewery.breweryName),
-                \(beer.beer.brewery.brewerySlug), \(beer.beer.brewery.breweryType),
-                \(beer.beer.brewery.breweryPageUrl), \(beer.beer.brewery.breweryLabel.absoluteString),
-                \(beer.beer.brewery.countryName), \(beer.beer.brewery.location.breweryCity),
-                \(beer.beer.brewery.location.breweryState), \(beer.beer.brewery.location.lat),
-                \(beer.beer.brewery.location.lng)
+                \(beer.bid), \(beer.beerName), \(beer.beerLabel.absoluteString),
+                \(beer.beerLabelHd.absoluteString), \(beer.beerAbv), \(beer.beerIbu),
+                \(beer.beerDescription), \(beer.beerStyle), \(beer.isInProduction),
+                \(beer.beerSlug), \(beer.isHomebrew), \(beer.createdAt),
+                \(beer.ratingCount), \(beer.ratingScore),
+                \(beer.stats.totalCount), \(beer.stats.monthlyCount),
+                \(beer.stats.totalUserCount), \(beer.stats.userCount),
+                \(beer.brewery.breweryId), \(beer.brewery.breweryName),
+                \(beer.brewery.brewerySlug), \(beer.brewery.breweryType),
+                \(beer.brewery.breweryPageUrl), \(beer.brewery.breweryLabel.absoluteString),
+                \(beer.brewery.countryName), \(beer.brewery.location.breweryCity),
+                \(beer.brewery.location.breweryState), \(beer.brewery.location.lat),
+                \(beer.brewery.location.lng)
             )
-            ON CONFLICT (bid) DO UPDATE SET
-                beer_name = EXCLUDED.beer_name,
-                beer_label = EXCLUDED.beer_label,
-                beer_label_hd = EXCLUDED.beer_label_hd,
-                beer_abv = EXCLUDED.beer_abv,
-                beer_ibu = EXCLUDED.beer_ibu,
-                beer_description = EXCLUDED.beer_description,
-                beer_style = EXCLUDED.beer_style,
+            ON CONFLICT (product_external_id) DO UPDATE SET
+                name = EXCLUDED.name,
+                label_url = EXCLUDED.label_url,
+                label_hd_url = EXCLUDED.label_hd_url,
+                abv = EXCLUDED.abv,
+                ibu = EXCLUDED.ibu,
+                description = EXCLUDED.description,
+                style = EXCLUDED.style,
                 is_in_production = EXCLUDED.is_in_production,
-                beer_slug = EXCLUDED.beer_slug,
+                slug = EXCLUDED.slug,
                 is_homebrew = EXCLUDED.is_homebrew,
-                created_at = EXCLUDED.created_at,
+                external_created_at = EXCLUDED.external_created_at,
                 rating_count = EXCLUDED.rating_count,
                 rating_score = EXCLUDED.rating_score,
                 stats_total_count = EXCLUDED.stats_total_count,
@@ -58,7 +58,7 @@ struct UntappdRepository: Sendable {
                 brewery_type = EXCLUDED.brewery_type,
                 brewery_page_url = EXCLUDED.brewery_page_url,
                 brewery_label = EXCLUDED.brewery_label,
-                brewery_country_name = EXCLUDED.brewery_country_name,
+                brewery_country = EXCLUDED.brewery_country,
                 brewery_city = EXCLUDED.brewery_city,
                 brewery_state = EXCLUDED.brewery_state,
                 brewery_lat = EXCLUDED.brewery_lat,
@@ -73,19 +73,25 @@ struct UntappdRepository: Sendable {
 
     @discardableResult
     func createProductMapping(
-        _ connection: PostgresConnection, alkoProductId: UUID, untappdProductId: UUID, confidenceScore: Double?, isVerified: Bool
+        _ connection: PostgresConnection,
+        alkoProductId: UUID,
+        untappdProductId: UUID,
+        confidenceScore: Int,
+        isVerified: Bool,
+        reasoning: String
     ) async throws -> UUID {
         let result = try await connection.query("""
             INSERT INTO products_alko_untappd_mapping (
-                alko_product_id, untappd_product_id, confidence_score, is_verified
+                alko_product_id, untappd_product_id, confidence_score, is_verified, reasoning
             )
             VALUES (
                 \(alkoProductId), \(untappdProductId), 
-                \(confidenceScore), \(isVerified)
+                \(confidenceScore), \(isVerified), \(reasoning)
             )
             ON CONFLICT (alko_product_id, untappd_product_id) DO UPDATE SET
                 confidence_score = EXCLUDED.confidence_score,
                 is_verified = EXCLUDED.is_verified,
+                reasoning = EXCLUDED.reasoning,
                 updated_at = now()
             RETURNING id
         """, logger: logger)

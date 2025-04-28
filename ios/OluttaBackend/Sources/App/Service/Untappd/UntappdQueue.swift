@@ -1,4 +1,5 @@
 import Foundation
+import OpenAI
 import RegexBuilder
 
 let untappdQueue = QueueConfiguration<Context>(
@@ -11,37 +12,19 @@ let untappdQueue = QueueConfiguration<Context>(
             guard let typeValue = message.message["id"], let id = typeValue.intValue else { throw QueueError.invalidPayload }
             try await ctx.pg.withTransaction { tx in
                 let beer = try await ctx.services.untappd.getBeerMetadata(bid: id)
-                try await ctx.repositories.untappd.upsertBeer(tx, beer: beer.response)
+                try await ctx.repositories.untappd.upsertBeer(tx, beer: beer.response.beer)
                 ctx.logger.info("updated untappd beer record", metadata: ["id": .init(stringLiteral: id.description)])
             }
-        case "v1:search-alko-produt":
+        case "v1:match-alko-product-to-untappd-product":
             guard let typeValue = message.message["id"], let idString = typeValue.stringValue, let id = UUID(uuidString: idString) else {
                 throw QueueError.invalidPayload
             }
             try await ctx.pg.withTransaction { tx in
+                let untappdLLM = UntappdLLM(openAIClient: ctx.openRouter, untappdService: ctx.services.untappd, logger: ctx.logger)
                 let alkoProduct = try await ctx.repositories.alko.getProductById(tx, id: id)
-                let wordsToRemove = ["tölkki"]
-                var query = alkoProduct.name
-                for word in wordsToRemove {
-                    query = query.replacingOccurrences(of: word, with: "", options: .caseInsensitive)
-                }
-                let numberPackPattern = Regex {
-                    OneOrMore(.digit)
-                    ZeroOrMore(.whitespace)
-                    "-"
-                    ZeroOrMore(.whitespace)
-                    "pack"
-                }.ignoresCase()
-                query = query.replacing(numberPackPattern, with: "")
-                query = query.trimmingCharacters(in: .whitespacesAndNewlines)
-                let products = try await ctx.services.untappd.searchBeer(query: query)
-                guard let bid = products.response.beers.items.first?.beer.bid else {
-                    ctx.logger.info("no beers found for product", metadata: ["id": .init(stringLiteral: id.description), query: .init(stringLiteral: query)])
-                    return
-                }
-                let beer = try await ctx.services.untappd.getBeerMetadata(bid: bid)
-                let untappdProductId = try await ctx.repositories.untappd.upsertBeer(tx, beer: beer.response)
-                try await ctx.repositories.untappd.createProductMapping(tx, alkoProductId: alkoProduct.id, untappdProductId: untappdProductId, confidenceScore: 0.0, isVerified: false)
+                let (beer, confidenceScore, reasoning) = try await untappdLLM.searchAndMatch(alkoProduct: alkoProduct)
+                let untappdProductId = try await ctx.repositories.untappd.upsertBeer(tx, beer: beer)
+                try await ctx.repositories.untappd.createProductMapping(tx, alkoProductId: alkoProduct.id, untappdProductId: untappdProductId, confidenceScore: confidenceScore, isVerified: false, reasoning: reasoning)
             }
         default:
             ctx.logger.error("unknown message type \(type)")

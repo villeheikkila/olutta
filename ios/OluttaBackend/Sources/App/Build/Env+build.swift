@@ -17,7 +17,8 @@ func buildEnv(environment: Environment) throws -> Env {
         alkoApiKey: environment.require("ALKO_API_KEY"),
         untappdClientId: environment.require("UNTAPPD_CLIENT_ID"),
         untappdClientSecret: environment.require("UNTAPPD_CLIENT_SECRET"),
-        requestSignatureSalt: environment.require("REQUEST_SIGNATURE_SALT")
+        requestSignatureSalt: environment.require("REQUEST_SIGNATURE_SALT"),
+        openrouterApiKey: environment.require("OPENROUTER_API_KEY")
     )
 }
 
@@ -37,4 +38,5 @@ struct Env {
     let untappdClientId: String
     let untappdClientSecret: String
     let requestSignatureSalt: String
+    let openrouterApiKey: String
 }

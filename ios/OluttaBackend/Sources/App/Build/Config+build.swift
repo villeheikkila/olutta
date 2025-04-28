@@ -13,7 +13,8 @@ func buildConfig(args: AppArguments, env: Env) -> Config {
         alkoAgent: env.alkoAgent,
         untappdClientId: env.untappdClientId,
         untappdClientSecret: env.untappdClientSecret,
-        requestSignatureSalt: env.requestSignatureSalt
+        requestSignatureSalt: env.requestSignatureSalt,
+        openrouterApiKey: env.openrouterApiKey
     )
 }
 
@@ -32,4 +33,5 @@ struct Config: Sendable {
     let untappdClientId: String
     let untappdClientSecret: String
     let requestSignatureSalt: String
+    let openrouterApiKey: String
 }
