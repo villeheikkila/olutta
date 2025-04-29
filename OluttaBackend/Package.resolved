@@ -1,5 +1,5 @@
 {
-  "originHash" : "0ced5631d70336829761df427fd239558fa09f5b4a22b85d0576d747a2af1937",
+  "originHash" : "4a49a6417e9cc712d3425b11d7d2b2e62ea3cda67e3b902c9fa63e5944bf1493",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -34,7 +34,7 @@
       "location" : "https://github.com/MacPaw/OpenAI.git",
       "state" : {
         "branch" : "main",
-        "revision" : "a7e97958235ee67d455803db124ee5d663712112"
+        "revision" : "40f3d6cdb5a2ad72369984a8e0e99a28c6e46f47"
       }
     },
     {
@@ -177,8 +177,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-metrics.git",
       "state" : {
-        "revision" : "44491db7cc66774ab930cf15f36324e16b06f425",
-        "version" : "2.6.1"
+        "revision" : "4c83e1cdf4ba538ef6e43a9bbd0bcc33a0ca46e3",
+        "version" : "2.7.0"
       }
     },
     {
@@ -186,8 +186,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio.git",
       "state" : {
-        "revision" : "6e17bc946821e550b88d22fd964423f70f1ce42d",
-        "version" : "2.82.0"
+        "revision" : "0f54d58bb5db9e064f332e8524150de379d1e51c",
+        "version" : "2.82.1"
       }
     },
     {
