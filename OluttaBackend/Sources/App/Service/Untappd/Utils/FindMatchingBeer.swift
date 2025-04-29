@@ -48,7 +48,7 @@ struct UntappdLLM {
         let prompt = createPrompt(alkoProduct: alkoProduct, untappdResults: untappdResults)
         let query = ChatQuery(
             messages: [.init(role: .user, content: prompt)!],
-            model: .gpt4_1,
+            model: "google/gemini-2.5-flash-preview",
             responseFormat: .jsonSchema(name: "BeerMatch", type: BeerMatchResponse.self)
         )
         let result = try await openRouter.chats(query: query)

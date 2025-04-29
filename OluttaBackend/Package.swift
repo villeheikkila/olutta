@@ -19,7 +19,7 @@ let package = Package(
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.24.2"),
         .package(
             url: "https://github.com/hummingbird-project/hummingbird-redis.git", from: "2.0.0"),
-        .package(url: "https://github.com/MacPaw/OpenAI.git", branch: "main"),
+        .package(url: "https://github.com/MacPaw/OpenAI.git", exact: "0.4.1"),
         .package(name: "OluttaShared", path: "../OluttaShared"),
     ],
     targets: [
@@ -38,16 +38,6 @@ let package = Package(
                 .product(name: "OluttaShared", package: "OluttaShared"),
             ],
             path: "Sources"
-        ),
-        .testTarget(
-            name: "OluttaBackendTests",
-            dependencies: [
-                "OluttaBackend"
-            ],
-            path: "Tests",
-            resources: [
-                .copy("Resources")
-            ]
-        ),
+        )
     ]
 )

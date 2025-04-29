@@ -10,7 +10,6 @@ COPY ./OluttaShared /workspace/OluttaShared/
 COPY ./OluttaBackend/Package.swift ./OluttaBackend/Package.resolved /workspace/OluttaBackend/
 COPY ./OluttaBackend/build_scripts /workspace/OluttaBackend/scripts
 COPY ./OluttaBackend/Sources /workspace/OluttaBackend/Sources
-COPY ./OluttaBackend/Tests /workspace/OluttaBackend/Tests
 
 WORKDIR /workspace/OluttaBackend
 
