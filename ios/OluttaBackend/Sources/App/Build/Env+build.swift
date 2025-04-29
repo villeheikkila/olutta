@@ -18,7 +18,10 @@ func buildEnv(environment: Environment) throws -> Env {
         untappdClientId: environment.require("UNTAPPD_CLIENT_ID"),
         untappdClientSecret: environment.require("UNTAPPD_CLIENT_SECRET"),
         requestSignatureSalt: environment.require("REQUEST_SIGNATURE_SALT"),
-        openrouterApiKey: environment.require("OPENROUTER_API_KEY")
+        openrouterApiKey: environment.require("OPENROUTER_API_KEY"),
+        appleTeamId: environment.require("APPLE_TEAM_ID"),
+        appleKeyId: environment.require("APPLE_KEY_ID"),
+        applePrivateKeyBase64: environment.require("APPLE_PRIVATE_KEY_BASE64"),
     )
 }
 
@@ -39,4 +42,7 @@ struct Env {
     let untappdClientSecret: String
     let requestSignatureSalt: String
     let openrouterApiKey: String
+    let appleTeamId: String
+    let appleKeyId: String
+    let applePrivateKeyBase64: String
 }
