@@ -14,7 +14,7 @@ struct StoreSheet: View {
                 if let store = selectedStore {
                     StoreDetailView(
                         navigationTitle: store.name,
-                        beers: [],
+                        storeId: store.id,
                         searchText: $searchText,
                         isPresented: $isPresented,
                         onClose: {
@@ -24,6 +24,9 @@ struct StoreSheet: View {
                             }
                         }
                     )
+                    .task {
+                        await appModel.getProductsByStoreId(id: store.id)
+                    }
                 } else {
                     StoreListView(
                         searchText: $searchText,
@@ -42,13 +45,16 @@ struct StoreSheet: View {
 struct StoreDetailView: View {
     @State private var selectedStyle: String = "All"
     let navigationTitle: String
-    let beers: [BeerEntity]
+    let storeId: UUID
+    @Environment(AppModel.self) private var appModel
     @Binding var searchText: String
     @Binding var isPresented: Bool
     let onClose: (() -> Void)?
 
+    var beers: [ProductEntity] { appModel.productsByStore[storeId] ?? [] }
+
     var body: some View {
-        List(filteredBeers) { beer in
+        List(beers) { beer in
             BeerRow(beer: beer)
                 .listRowBackground(Color.clear)
         }
@@ -63,52 +69,52 @@ struct StoreDetailView: View {
                     CloseButtonView(action: onClose)
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Picker("Style", selection: $selectedStyle) {
-                        Text("All").tag("All")
-                        ForEach(beers.groupedBeerStyles, id: \.category) { group in
-                            Section(header: Text(group.category)) {
-                                if group.styles.count > 1, !group.styles.map(\.name).contains(group.category) {
-                                    Text("\(group.category) (\(group.categoryCount))")
-                                        .tag(group.category)
-                                }
-                                ForEach(group.styles, id: \.name) { style in
-                                    Text("\(style.name) (\(style.count))")
-                                        .tag(style.name)
-                                }
-                            }
-                        }
-                    }
-                } label: {
-                    Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
-                }
-            }
+//            ToolbarItem(placement: .topBarTrailing) {
+//                Menu {
+//                    Picker("Style", selection: $selectedStyle) {
+//                        Text("All").tag("All")
+//                        ForEach(beers.groupedBeerStyles, id: \.category) { group in
+//                            Section(header: Text(group.category)) {
+//                                if group.styles.count > 1, !group.styles.map(\.name).contains(group.category) {
+//                                    Text("\(group.category) (\(group.categoryCount))")
+//                                        .tag(group.category)
+//                                }
+//                                ForEach(group.styles, id: \.name) { style in
+//                                    Text("\(style.name) (\(style.count))")
+//                                        .tag(style.name)
+//                                }
+//                            }
+//                        }
+//                    }
+//                } label: {
+//                    Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
+//                }
+//            }
         }
     }
 
-    private var filteredByStyle: [BeerEntity] {
-        if selectedStyle == "All" {
-            return beers
-        }
-        if let categoryGroup = beers.groupedBeerStyles.first(where: { $0.category == selectedStyle }) {
-            return beers.filter { beer in
-                categoryGroup.styles.map(\.name).contains(beer.beerStyle)
-            }
-        }
-        return beers.filter { $0.beerStyle == selectedStyle }.sorted { $0.rating ?? 0 > $1.rating ?? 0 }
-    }
-
-    private var filteredBeers: [BeerEntity] {
-        if searchText.isEmpty {
-            return filteredByStyle
-        }
-
-        return filteredByStyle.filter { beer in
-            beer.name.localizedCaseInsensitiveContains(searchText) ||
-                beer.beerStyle.localizedCaseInsensitiveContains(searchText)
-        }
-    }
+//    private var filteredByStyle: [BeerEntity] {
+//        if selectedStyle == "All" {
+//            return beers
+//        }
+//        if let categoryGroup = beers.groupedBeerStyles.first(where: { $0.category == selectedStyle }) {
+//            return beers.filter { beer in
+//                categoryGroup.styles.map(\.name).contains(beer.beerStyle)
+//            }
+//        }
+//        return beers.filter { $0.beerStyle == selectedStyle }.sorted { $0.rating ?? 0 > $1.rating ?? 0 }
+//    }
+//
+//    private var filteredBeers: [BeerEntity] {
+//        if searchText.isEmpty {
+//            return filteredByStyle
+//        }
+//
+//        return filteredByStyle.filter { beer in
+//            beer.name.localizedCaseInsensitiveContains(searchText) ||
+//                beer.beerStyle.localizedCaseInsensitiveContains(searchText)
+//        }
+//    }
 }
 
 struct StoreListView: View {
@@ -189,7 +195,7 @@ struct AvailableToOrderScreen: View {
     var body: some View {
         StoreDetailView(
             navigationTitle: "Available to Order",
-            beers: appModel.webStoreItems,
+            storeId: UUID(),
             searchText: $searchText,
             isPresented: $isPresented,
             onClose: nil

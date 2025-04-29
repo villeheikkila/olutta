@@ -20,7 +20,7 @@ let untappdQueue = QueueConfiguration<Context>(
                 throw QueueError.invalidPayload
             }
             try await ctx.pg.withTransaction { tx in
-                let untappdLLM = UntappdLLM(openAIClient: ctx.openRouter, untappdService: ctx.services.untappd, logger: ctx.logger)
+                let untappdLLM = UntappdLLM(openRouter: ctx.openRouter, untappdService: ctx.services.untappd, logger: ctx.logger)
                 let alkoProduct = try await ctx.repositories.alko.getProductById(tx, id: id)
                 let (beer, confidenceScore, reasoning) = try await untappdLLM.searchAndMatch(alkoProduct: alkoProduct)
                 let untappdProductId = try await ctx.repositories.untappd.upsertBeer(tx, beer: beer)

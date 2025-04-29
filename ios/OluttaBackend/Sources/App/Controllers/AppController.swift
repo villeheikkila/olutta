@@ -13,6 +13,7 @@ struct AppController {
     var endpoints: RouteCollection<AppRequestContext> {
         RouteCollection(context: AppRequestContext.self)
             .get(.stores, use: stores)
+            .get(.productsByStoreId(UUID()), use: productsByStoreId)
     }
 }
 
@@ -41,5 +42,20 @@ extension AppController {
         }
         try await persist.set(key: key, value: res, expires: .seconds(60))
         return res
+    }
+}
+
+extension AppController {
+    func productsByStoreId(request _: Request, context: some RequestContext) async throws -> [ProductEntity] {
+        guard let id = context.parameters.get("id", as: UUID.self) else { throw HTTPError(.badRequest) }
+        let products = try await pg.withTransaction { tx in
+            try await alkoRepository.getProductsByStoreId(tx, id: id)
+        }
+
+        return products.map {
+            ProductEntity(
+                id: $0.alkoProduct.id, alkoId: $0.alkoProduct.productExternalId, untappdId: $0.untappdProduct?.productExternalId, name: $0.alkoProduct.name, manufacturer: $0.untappdProduct?.breweryName ?? "", price: $0.alkoProduct.price, alcoholPercentage: $0.alkoProduct.abv, beerStyle: $0.untappdProduct?.style ?? ""
+            )
+        }
     }
 }

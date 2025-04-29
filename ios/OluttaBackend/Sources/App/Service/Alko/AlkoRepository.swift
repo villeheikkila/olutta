@@ -33,6 +33,195 @@ struct AlkoRepository: Sendable {
         return stores
     }
 
+    func getProductsByStoreId(
+        _ connection: PostgresConnection,
+        id: UUID
+    ) async throws -> [CombinedProductEntity] {
+        let result = try await connection.query(
+            """
+            SELECT 
+                -- alko
+                p."id", p."product_external_id", p."name", p."taste", p."additional_info", 
+                p."abv", p."beer_style_id", p."beer_style_name", p."beer_substyle_id", 
+                p."country_name", p."food_symbol_id", p."main_group_id", p."price", 
+                p."product_group_id", p."product_group_name", p."volume", 
+                p."online_availability_datetime_ts", p."description", p."certificate_id",
+                a."product_count",
+                -- untappd
+                u."id" as untappd_id, u."product_external_id" as untappd_external_id, 
+                u."name" as untappd_name, u."label_url", u."label_hd_url", 
+                u."abv" as untappd_abv, u."ibu", u."description" as untappd_description, 
+                u."style", u."is_in_production", u."slug", u."is_homebrew", 
+                u."external_created_at", u."rating_count", u."rating_score", 
+                u."stats_total_count", u."stats_monthly_count", 
+                u."stats_total_user_count", u."stats_user_count", 
+                u."brewery_id", u."brewery_name", u."brewery_slug", 
+                u."brewery_type", u."brewery_page_url", u."brewery_label", 
+                u."brewery_country", u."brewery_city", u."brewery_state", 
+                u."brewery_lat", u."brewery_lng",
+                -- mapping
+                m."confidence_score", m."is_verified", m."reasoning"
+            FROM products_alko p
+            JOIN availability_alko_store a ON p.id = a.product_id
+            LEFT JOIN LATERAL (
+                SELECT m.*
+                FROM products_alko_untappd_mapping m
+                WHERE m.alko_product_id = p.id
+                ORDER BY m.confidence_score DESC, m.is_verified DESC
+                LIMIT 1
+            ) m ON true
+            LEFT JOIN products_untappd u ON m.untappd_product_id = u.id
+            WHERE a.store_id = \(id)
+            ORDER BY p.name
+            """,
+            logger: logger
+        )
+        var products: [CombinedProductEntity] = []
+        for try await (
+            // alko
+            id, externalId, name, taste, additionalInfo, abv, beerStyleId,
+            beerStyleName, beerSubstyleId, countryName, foodSymbolId, mainGroupId,
+            price, productGroupId, productGroupName, volume,
+            onlineAvailabilityDatetimeTs, description, certificateId, productCount,
+            // untappd
+            untappdId, untappdExternalId, untappdName, labelUrl, labelHdUrl,
+            untappdAbv, ibu, untappdDescription, style, isInProduction, slug, isHomebrew,
+            externalCreatedAt, ratingCount, ratingScore, statsTotalCount, statsMonthlyCount,
+            statsTotalUserCount, statsUserCount, breweryId, breweryName, brewerySlug,
+            breweryType, breweryPageUrl, breweryLabel, breweryCountry, breweryCity,
+            breweryState, breweryLat, breweryLng,
+            // mapping
+            confidenceScore, isVerified, reasoning
+        ) in result.decode((
+            // alko
+            UUID, String, String, String?, String?, Double?,
+            [String], [String], [String]?, String?, [String]?,
+            [String], Double?, [String], [String], Double?,
+            Int64?, String?, [String]?, String?,
+            // untappd
+            UUID?, Int?, String?, String?, String?,
+            Decimal?, Int?, String?, String?, Int?, String?, Int?,
+            String?, Int?, Decimal?, Int?, Int?,
+            Int?, Int?, Int?, String?, String?,
+            String?, String?, String?, String?, String?,
+            String?, Decimal?, Decimal?,
+            // mapping
+            Int?, Bool?, String?
+        ).self) {
+            let alkoProduct = AlkoProductEntity(
+                id: id,
+                productExternalId: externalId,
+                name: name,
+                taste: taste,
+                additionalInfo: additionalInfo,
+                abv: abv,
+                beerStyleId: beerStyleId,
+                beerStyleName: beerStyleName,
+                beerSubstyleId: beerSubstyleId,
+                countryName: countryName,
+                foodSymbolId: foodSymbolId,
+                mainGroupId: mainGroupId,
+                price: price,
+                productGroupId: productGroupId,
+                productGroupName: productGroupName,
+                volume: volume,
+                onlineAvailabilityDatetimeTs: onlineAvailabilityDatetimeTs,
+                description: description,
+                certificateId: certificateId
+            )
+
+            // Create UntappdProductEntity only if we have a valid untappdId
+            let untappdProduct: UntappdProductEntity? = if let untappdId,
+                                                           let untappdExternalId,
+                                                           let untappdName,
+                                                           let labelUrl,
+                                                           let labelHdUrl,
+                                                           let untappdAbv,
+                                                           let ibu,
+                                                           let untappdDescription,
+                                                           let style,
+                                                           let isInProduction,
+                                                           let slug,
+                                                           let isHomebrew,
+                                                           let externalCreatedAt,
+                                                           let ratingCount,
+                                                           let ratingScore,
+                                                           let statsTotalCount,
+                                                           let statsMonthlyCount,
+                                                           let statsTotalUserCount,
+                                                           let statsUserCount,
+                                                           let breweryId,
+                                                           let breweryName,
+                                                           let brewerySlug,
+                                                           let breweryType,
+                                                           let breweryPageUrl,
+                                                           let breweryLabel,
+                                                           let breweryCountry,
+                                                           let breweryCity,
+                                                           let breweryState,
+                                                           let breweryLat,
+                                                           let breweryLng
+            {
+                UntappdProductEntity(
+                    id: untappdId,
+                    productExternalId: untappdExternalId,
+                    name: untappdName,
+                    labelUrl: labelUrl,
+                    labelHdUrl: labelHdUrl,
+                    abv: untappdAbv,
+                    ibu: ibu,
+                    description: untappdDescription,
+                    style: style,
+                    isInProduction: isInProduction,
+                    slug: slug,
+                    isHomebrew: isHomebrew,
+                    externalCreatedAt: externalCreatedAt,
+                    ratingCount: ratingCount,
+                    ratingScore: ratingScore,
+                    statsTotalCount: statsTotalCount,
+                    statsMonthlyCount: statsMonthlyCount,
+                    statsTotalUserCount: statsTotalUserCount,
+                    statsUserCount: statsUserCount,
+                    breweryId: breweryId,
+                    breweryName: breweryName,
+                    brewerySlug: brewerySlug,
+                    breweryType: breweryType,
+                    breweryPageUrl: breweryPageUrl,
+                    breweryLabel: breweryLabel,
+                    breweryCountry: breweryCountry,
+                    breweryCity: breweryCity,
+                    breweryState: breweryState,
+                    breweryLat: breweryLat,
+                    breweryLng: breweryLng
+                )
+            } else {
+                nil
+            }
+
+            // Create MappingInfo only if we have a valid mapping
+            let mappingInfo: MappingInfo? = if let confidenceScore,
+                                               let isVerified,
+                                               let reasoning
+            {
+                MappingInfo(
+                    confidenceScore: confidenceScore,
+                    isVerified: isVerified,
+                    reasoning: reasoning
+                )
+            } else {
+                nil
+            }
+
+            products.append(.init(
+                alkoProduct: alkoProduct,
+                untappdProduct: untappdProduct,
+                mappingInfo: mappingInfo,
+                productCount: productCount
+            ))
+        }
+        return products
+    }
+
     func getProductById(
         _ connection: PostgresConnection,
         id: UUID

@@ -26,6 +26,7 @@ class AppModel {
     var isLoading = true
     var error: Error?
     var stores: [StoreEntity] = []
+    var productsByStore: [UUID: [ProductEntity]] = [:]
     let httpClient: HTTPClient
 
     init(httpClient: HTTPClient) {
@@ -48,6 +49,15 @@ class AppModel {
             logger.error("failed to load stores: \(error.localizedDescription)")
             self.error = error
             isLoading = false
+        }
+    }
+
+    func getProductsByStoreId(id: UUID) async {
+        do {
+            let products: [ProductEntity] = try await httpClient.get(endpoint: .productsByStoreId(id))
+            productsByStore[id] = products
+        } catch {
+            logger.error("failed to load products: \(error.localizedDescription)")
         }
     }
 
