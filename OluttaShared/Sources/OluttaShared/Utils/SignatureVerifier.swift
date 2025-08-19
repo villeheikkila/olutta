@@ -29,7 +29,7 @@ public struct SignatureService: Sendable {
         authority: String?,
         path: String,
         headers: HTTPFields,
-        body: Data?
+        body: Data?,
     ) throws(SignatureError) -> (signature: String, bodyHash: String?) {
         var modifiedHeaders = headers
         let bodyHash: String? = if let body, !body.isEmpty {
@@ -46,7 +46,7 @@ public struct SignatureService: Sendable {
             authority: authority,
             path: path,
             headers: modifiedHeaders,
-            bodyHash: bodyHash
+            bodyHash: bodyHash,
         )
         return (signature, bodyHash)
     }
@@ -57,7 +57,7 @@ public struct SignatureService: Sendable {
         authority: String?,
         path: String,
         headers: HTTPFields,
-        body: Data
+        body: Data,
     ) throws(SignatureError) {
         guard let signatureHeader = headers[.requestSignature] else {
             throw .missingSignature
@@ -77,7 +77,7 @@ public struct SignatureService: Sendable {
             authority: authority,
             path: path,
             headers: headers,
-            bodyHash: headers[.bodyHash]
+            bodyHash: headers[.bodyHash],
         )
         guard computedSignature == signatureHeader else {
             throw .invalidSignature
@@ -90,7 +90,7 @@ public struct SignatureService: Sendable {
         authority: String?,
         path: String,
         headers: HTTPFields,
-        bodyHash: String?
+        bodyHash: String?,
     ) throws(SignatureError) -> String {
         var signatureComponents = [String]()
         signatureComponents.append(method.rawValue)

@@ -20,7 +20,7 @@ final class HTTPClient {
         secretKey: String,
         defaultHeaders: [HTTPField] = [],
         session: URLSession = .shared,
-        shouldLogRequestDuration _: Bool = false
+        shouldLogRequestDuration _: Bool = false,
     ) {
         logger = Logger(subsystem: "", category: "HTTPClient")
         self.baseURL = baseURL
@@ -36,7 +36,7 @@ final class HTTPClient {
         path: String,
         queryItems: [URLQueryItem]? = nil,
         headers: [HTTPField] = [],
-        body: Data? = nil
+        body: Data? = nil,
     ) async throws -> (Data, HTTPResponse) {
         let startTime = Date()
 
@@ -60,7 +60,7 @@ final class HTTPClient {
             authority: nil,
             path: path,
             headers: httpFields,
-            body: body
+            body: body,
         )
         httpFields.append(.init(name: .requestSignature, value: signatureResult.signature))
         if let bodyHash = signatureResult.bodyHash {
@@ -82,13 +82,13 @@ final class HTTPClient {
     func get<T: Decodable>(
         path: String,
         queryItems: [URLQueryItem]? = nil,
-        headers: [HTTPField] = []
+        headers: [HTTPField] = [],
     ) async throws -> T {
         let (data, response) = try await request(
             method: .get,
             path: path,
             queryItems: queryItems,
-            headers: headers
+            headers: headers,
         )
         guard (200 ... 299).contains(response.status.code) else {
             throw HTTPClientError.httpError(code: response.status.code, data: data)
@@ -104,7 +104,7 @@ final class HTTPClient {
         path: String,
         body: some Encodable,
         queryItems: [URLQueryItem]? = nil,
-        headers: [HTTPField] = []
+        headers: [HTTPField] = [],
     ) async throws -> T {
         let bodyData = try encoder.encode(body)
         let (data, response) = try await request(
@@ -112,7 +112,7 @@ final class HTTPClient {
             path: path,
             queryItems: queryItems,
             headers: headers,
-            body: bodyData
+            body: bodyData,
         )
         guard (200 ... 299).contains(response.status.code) else {
             throw HTTPClientError.httpError(code: response.status.code, data: data)
@@ -131,26 +131,26 @@ extension HTTPClient {
         endpoint: APIEndpoint,
         queryItems: [URLQueryItem]? = nil,
         headers: [HTTPField] = [],
-        body: Data? = nil
+        body: Data? = nil,
     ) async throws -> (Data, HTTPResponse) {
         try await request(
             method: method,
             path: endpoint.path,
             queryItems: queryItems,
             headers: headers,
-            body: body
+            body: body,
         )
     }
 
     func get<T: Decodable>(
         endpoint: APIEndpoint,
         queryItems: [URLQueryItem]? = nil,
-        headers: [HTTPField] = []
+        headers: [HTTPField] = [],
     ) async throws -> T {
         try await get(
             path: endpoint.path,
             queryItems: queryItems,
-            headers: headers
+            headers: headers,
         )
     }
 
@@ -158,13 +158,13 @@ extension HTTPClient {
         endpoint: APIEndpoint,
         body: some Encodable,
         queryItems: [URLQueryItem]? = nil,
-        headers: [HTTPField] = []
+        headers: [HTTPField] = [],
     ) async throws -> T {
         try await post(
             path: endpoint.path,
             body: body,
             queryItems: queryItems,
-            headers: headers
+            headers: headers,
         )
     }
 }

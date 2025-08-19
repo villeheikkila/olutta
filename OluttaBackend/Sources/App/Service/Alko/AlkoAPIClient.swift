@@ -10,7 +10,7 @@ final class AlkoService: Sendable {
     private let baseUrl: String
     private let agent: String
 
-    public init(logger: Logger = Logger(label: "AlkoService"), httpClient: HTTPClient = HTTPClient.shared, apiKey: String, baseUrl: String, agent: String) {
+    init(logger: Logger = Logger(label: "AlkoService"), httpClient: HTTPClient = HTTPClient.shared, apiKey: String, baseUrl: String, agent: String) {
         self.logger = logger
         self.httpClient = httpClient
         decoder = JSONDecoder()
@@ -20,23 +20,23 @@ final class AlkoService: Sendable {
     }
 
     // public methods
-    public func getStores() async throws(AlkoError) -> [AlkoStoreResponse] {
+    func getStores() async throws(AlkoError) -> [AlkoStoreResponse] {
         try await request(endpoint: "/v1/stores?lang=fi")
     }
 
-    public func getAvailability(productId: String) async throws(AlkoError) -> [AlkoStoreAvailabilityResponse] {
+    func getAvailability(productId: String) async throws(AlkoError) -> [AlkoStoreAvailabilityResponse] {
         try await request(endpoint: "/v1/availability/\(productId)?lang=fi")
     }
 
-    public func getWebstoreAvailability(id: String) async throws(AlkoError) -> [AlkoWebAvailabilityResponse] {
+    func getWebstoreAvailability(id: String) async throws(AlkoError) -> [AlkoWebAvailabilityResponse] {
         try await request(endpoint: "/v1/webshopAvailability?products=\(id)&lang=fi")
     }
 
-    public func getProduct(id: String) async throws(AlkoError) -> AlkoProductResponse {
+    func getProduct(id: String) async throws(AlkoError) -> AlkoProductResponse {
         try await request(endpoint: "/v1/products/\(id)?omitFields=webshopAvailability&lang=fi")
     }
 
-    public func getAllBeers() async throws(AlkoError) -> [AlkoSearchProductResponse] {
+    func getAllBeers() async throws(AlkoError) -> [AlkoSearchProductResponse] {
         try await getAllProducts(queries: [
             .init(op: "eq", field: "productGroupId", value: "productGroup_600"),
             .init(op: "eq", field: "productGroupId", value: "productGroup_940"),
@@ -53,17 +53,17 @@ final class AlkoService: Sendable {
             let searchRequest = AlkoSearchRequest(
                 filter: .init(
                     op: "or",
-                    queries: queries
+                    queries: queries,
                 ),
                 top: pageSize,
                 skip: skip,
                 orderby: "onlineAvailabilityDatetimeTs desc",
                 seed: seed,
-                freeText: ""
+                freeText: "",
             )
             let response: AlkoProductSearchResponse = try await request(
                 endpoint: "/v1/products/search?lang=fi",
-                method: .POST(body: searchRequest)
+                method: .POST(body: searchRequest),
             )
             allProducts.append(contentsOf: response.value)
             if response.value.count < pageSize || allProducts.count >= response.count {
@@ -100,7 +100,7 @@ final class AlkoService: Sendable {
     private func request<T: Decodable>(
         endpoint: String,
         method: HTTPMethod = .GET,
-        options: [(name: String, value: String)] = []
+        options: [(name: String, value: String)] = [],
     ) async throws(AlkoError) -> T {
         let url = "\(baseUrl)\(endpoint)"
         var request = HTTPClientRequest(url: url)
@@ -154,12 +154,12 @@ final class AlkoService: Sendable {
         }
     }
 
-    public struct AlkoSearchRequest: Encodable {
-        public struct Filter: Encodable {
-            public struct Query: Encodable {
-                public let op: String
-                public let field: String
-                public let value: String
+    struct AlkoSearchRequest: Encodable {
+        struct Filter: Encodable {
+            struct Query: Encodable {
+                let op: String
+                let field: String
+                let value: String
             }
 
             let op: String

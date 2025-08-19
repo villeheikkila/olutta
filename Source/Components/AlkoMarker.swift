@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AlkoMarker: View {
-    var count: Int? = nil
+    var count: Int?
 
     var body: some View {
         VStack(spacing: 2) {

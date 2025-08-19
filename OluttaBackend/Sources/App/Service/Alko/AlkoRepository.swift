@@ -11,7 +11,7 @@ struct AlkoRepository: Sendable {
                    "postal_code", "latitude", "longitude", "outlet_type"
             FROM stores_alko
             """,
-            logger: logger
+            logger: logger,
         )
 
         var stores: [AlkoStoreEntity] = []
@@ -26,7 +26,7 @@ struct AlkoRepository: Sendable {
                 city: city,
                 postalCode: postalCode,
                 latitude: latitude,
-                longitude: longitude
+                longitude: longitude,
             )
             stores.append(store)
         }
@@ -35,7 +35,7 @@ struct AlkoRepository: Sendable {
 
     func getProductsByStoreId(
         _ connection: PostgresConnection,
-        id: UUID
+        id: UUID,
     ) async throws -> [CombinedProductEntity] {
         let result = try await connection.query(
             """
@@ -74,7 +74,7 @@ struct AlkoRepository: Sendable {
             WHERE a.store_id = \(id)
             ORDER BY p.name
             """,
-            logger: logger
+            logger: logger,
         )
         var products: [CombinedProductEntity] = []
         for try await (
@@ -91,7 +91,7 @@ struct AlkoRepository: Sendable {
             breweryType, breweryPageUrl, breweryLabel, breweryCountry, breweryCity,
             breweryState, breweryLat, breweryLng,
             // mapping
-            confidenceScore, isVerified, reasoning
+            confidenceScore, isVerified, reasoning,
         ) in result.decode((
             // alko
             UUID, String, String, String?, String?, Double?,
@@ -127,7 +127,7 @@ struct AlkoRepository: Sendable {
                 volume: volume,
                 onlineAvailabilityDatetimeTs: onlineAvailabilityDatetimeTs,
                 description: description,
-                certificateId: certificateId
+                certificateId: certificateId,
             )
 
             // Create UntappdProductEntity only if we have a valid untappdId
@@ -192,7 +192,7 @@ struct AlkoRepository: Sendable {
                     breweryCity: breweryCity,
                     breweryState: breweryState,
                     breweryLat: breweryLat,
-                    breweryLng: breweryLng
+                    breweryLng: breweryLng,
                 )
             } else {
                 nil
@@ -206,7 +206,7 @@ struct AlkoRepository: Sendable {
                 MappingInfo(
                     confidenceScore: confidenceScore,
                     isVerified: isVerified,
-                    reasoning: reasoning
+                    reasoning: reasoning,
                 )
             } else {
                 nil
@@ -216,7 +216,7 @@ struct AlkoRepository: Sendable {
                 alkoProduct: alkoProduct,
                 untappdProduct: untappdProduct,
                 mappingInfo: mappingInfo,
-                productCount: productCount
+                productCount: productCount,
             ))
         }
         return products
@@ -224,7 +224,7 @@ struct AlkoRepository: Sendable {
 
     func getProductById(
         _ connection: PostgresConnection,
-        id: UUID
+        id: UUID,
     ) async throws -> AlkoProductEntity {
         let result = try await connection.query(
             """
@@ -236,7 +236,7 @@ struct AlkoRepository: Sendable {
                 FROM products_alko
                 WHERE id = \(id)
             """,
-            logger: logger
+            logger: logger,
         )
         for try await (id, externalId, name, taste, additionalInfo, abv, beerStyleId,
                        beerStyleName, beerSubstyleId, countryName, foodSymbolId, mainGroupId,
@@ -266,7 +266,7 @@ struct AlkoRepository: Sendable {
                 volume: volume,
                 onlineAvailabilityDatetimeTs: onlineAvailabilityDatetimeTs,
                 description: description,
-                certificateId: certificateId
+                certificateId: certificateId,
             )
         }
         throw RepositoryError.recordNotFound
@@ -274,7 +274,7 @@ struct AlkoRepository: Sendable {
 
     func upsertAlkoProducts(
         _ connection: PostgresConnection,
-        products: [AlkoSearchProductResponse]
+        products: [AlkoSearchProductResponse],
     ) async throws -> [(id: UUID, isNewRecord: Bool)] {
         let columns = [
             "product_external_id",
@@ -352,6 +352,35 @@ struct AlkoRepository: Sendable {
             productResults.append((id: id, isNewRecord: isNewRecord))
         }
         return productResults
+    }
+
+    func markUnavailableAlkoProducts(
+        _ connection: PostgresConnection,
+        excludingProductIds: [UUID],
+    ) async throws -> Int {
+        var bindings: PostgresBindings = .init()
+        let placeholders = (1 ... excludingProductIds.count).map { "$\($0)" }
+        for productId in excludingProductIds {
+            bindings.append(productId)
+        }
+        let updateUnavailableQuery = """
+            UPDATE products_alko 
+            SET 
+                unavailable_since = NOW(),
+                updated_at = NOW()
+            WHERE id NOT IN (\(placeholders.joined(separator: ", ")))
+            AND unavailable_since IS NULL
+            RETURNING id;
+        """
+        let result = try await connection.query(
+            .init(unsafeSQL: updateUnavailableQuery, binds: bindings),
+            logger: logger,
+        )
+        var affectedCount = 0
+        for try await _ in result.decode(UUID.self) {
+            affectedCount += 1
+        }
+        return affectedCount
     }
 
     func upsertStores(_ connection: PostgresConnection, stores: [AlkoStoreResponse]) async throws -> [(id: String, isNewRecord: Bool)] {
@@ -461,7 +490,7 @@ struct AlkoRepository: Sendable {
     func upsertStoreInventory(
         _ connection: PostgresConnection,
         productId: UUID,
-        availabilities: [(storeId: UUID, count: String?)]
+        availabilities: [(storeId: UUID, count: String?)],
     ) async throws -> [(id: (UUID, UUID), isNewRecord: Bool)] {
         let columns = [
             "store_id",
@@ -504,7 +533,7 @@ struct AlkoRepository: Sendable {
     func linkAlkoProductToUntappdBeer(
         _ connection: PostgresConnection,
         alkoProductId: UUID,
-        untappdId: UUID
+        untappdId: UUID,
     ) async throws {
         let result = try await connection.query("""
             UPDATE products_alko 

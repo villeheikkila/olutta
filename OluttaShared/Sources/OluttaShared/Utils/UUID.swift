@@ -18,7 +18,7 @@ public extension UUID {
             UInt8.random(in: 0 ... 255),
             UInt8.random(in: 0 ... 255),
             UInt8.random(in: 0 ... 255),
-            UInt8.random(in: 0 ... 255)
+            UInt8.random(in: 0 ... 255),
         )
         let timestamp = Int(Date().timeIntervalSince1970 * 1000)
         value.0 = .init((timestamp >> 40) & 0xFF)

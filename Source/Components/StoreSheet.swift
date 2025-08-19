@@ -4,14 +4,13 @@ import SwiftUI
 struct StoreSheet: View {
     @Environment(AppModel.self) private var appModel
     @Binding var settingsDetent: PresentationDetent
-    @Binding var selectedStore: StoreEntity?
     @State private var searchText = ""
     @State private var isPresented = false
 
     var body: some View {
         NavigationStack {
             Group {
-                if let store = selectedStore {
+                if let store = appModel.selectedStore {
                     StoreDetailView(
                         navigationTitle: store.name,
                         storeId: store.id,
@@ -20,18 +19,17 @@ struct StoreSheet: View {
                         onClose: {
                             withAnimation {
                                 searchText = ""
-                                selectedStore = nil
+                                appModel.selectedStore = nil
                             }
-                        }
+                        },
                     )
-                    .task {
+                    .task(id: store.id) {
                         await appModel.getProductsByStoreId(id: store.id)
                     }
                 } else {
                     StoreListView(
                         searchText: $searchText,
                         settingsDetent: $settingsDetent,
-                        selectedStore: $selectedStore
                     )
                 }
             }
@@ -121,7 +119,6 @@ struct StoreListView: View {
     @Environment(AppModel.self) private var appModel
     @Binding var searchText: String
     @Binding var settingsDetent: PresentationDetent
-    @Binding var selectedStore: StoreEntity?
     @State private var previousDetent: PresentationDetent?
 
     var body: some View {
@@ -165,7 +162,7 @@ struct StoreListView: View {
                         .listRowBackground(Color.clear)
                         .onTapGesture {
                             withAnimation {
-                                selectedStore = store
+                                appModel.selectedStore = store
                             }
                         }
                 }
@@ -198,7 +195,7 @@ struct AvailableToOrderScreen: View {
             storeId: UUID(),
             searchText: $searchText,
             isPresented: $isPresented,
-            onClose: nil
+            onClose: nil,
         )
         .listStyle(.plain)
         .scrollContentBackground(.hidden)

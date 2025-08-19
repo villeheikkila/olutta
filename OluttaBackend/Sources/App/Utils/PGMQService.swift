@@ -30,7 +30,7 @@ public struct QueueConfiguration<ContextContext: QueueContextProtocol>: Sendable
     public init(
         name: String,
         policy: QueuePolicy = .init(),
-        handler: @escaping MessageHandler<ContextContext>
+        handler: @escaping MessageHandler<ContextContext>,
     ) {
         self.name = name
         self.policy = policy
@@ -56,7 +56,7 @@ public struct QueuePolicy: Sendable {
         retryDelay: TimeInterval = 10,
         shouldMoveToDLQ: Bool = true,
         isSequential: Bool = false,
-        maxConcurrentJobs: Int = 1
+        maxConcurrentJobs: Int = 1,
     ) {
         self.priority = priority
         self.batchSize = batchSize
@@ -75,7 +75,7 @@ public struct SharedPoolConfig: Sendable {
 
     public init(
         maxConcurrentJobs: Int = 10,
-        pollInterval: TimeInterval = 1
+        pollInterval: TimeInterval = 1,
     ) {
         self.maxConcurrentJobs = maxConcurrentJobs
         self.pollInterval = pollInterval
@@ -100,7 +100,7 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
     init(
         context: Context,
         logger: Logger,
-        poolConfig: SharedPoolConfig = .init()
+        poolConfig: SharedPoolConfig = .init(),
     ) {
         self.context = context
         self.logger = logger
@@ -134,14 +134,14 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
 
     private func processQueue(
         name queueName: String,
-        registration: QueueConfiguration<Context>
+        registration: QueueConfiguration<Context>,
     ) async throws {
         while isRunning {
             do {
                 let messages = try await context.pgmq.read(
                     queue: queueName,
                     vt: registration.policy.visibilityTimeout,
-                    qty: registration.policy.batchSize
+                    qty: registration.policy.batchSize,
                 )
 
                 guard !messages.isEmpty else {
@@ -155,7 +155,7 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
                             message,
                             queueName: queueName,
                             policy: registration.policy,
-                            handler: registration.handler
+                            handler: registration.handler,
                         )
                     }
                 } else {
@@ -166,7 +166,7 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
                                     message,
                                     queueName: queueName,
                                     policy: registration.policy,
-                                    handler: registration.handler
+                                    handler: registration.handler,
                                 )
                             }
                         }
@@ -196,7 +196,7 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
         _ message: PGMQMessage,
         queueName: String,
         policy: QueuePolicy,
-        handler: @escaping @Sendable (Context, PGMQMessage) async throws -> Void
+        handler: @escaping @Sendable (Context, PGMQMessage) async throws -> Void,
     ) async throws {
         incrementActiveJobs(queueName: queueName)
         defer { decrementActiveJobs(queueName: queueName) }
@@ -223,7 +223,7 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
         _ message: PGMQMessage,
         error: Error,
         queueName: String,
-        policy: QueuePolicy
+        policy: QueuePolicy,
     ) async {
         do {
             if message.readCount >= policy.maxRetries {
@@ -243,13 +243,13 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
     private func moveToDLQ(
         _ message: PGMQMessage,
         error: Error,
-        queueName: String
+        queueName: String,
     ) async throws {
         let dlqName = "\(queueName)_dlq"
         _ = try await context.pgmq.send(
             queue: dlqName,
             message: DLQMessage(message: message, error: error.localizedDescription),
-            delay: 0
+            delay: 0,
         )
         _ = try await context.pgmq.archive(queue: queueName, id: message.id)
     }
@@ -269,7 +269,7 @@ public struct DLQMessage: Sendable, Codable, PostgresEncodable {
 
     public func encode(
         into byteBuffer: inout NIOCore.ByteBuffer,
-        context: PostgresEncodingContext<some PostgresJSONEncoder>
+        context: PostgresEncodingContext<some PostgresJSONEncoder>,
     ) throws {
         try context.jsonEncoder.encode(self, into: &byteBuffer)
     }

@@ -11,12 +11,12 @@ final class UntappdService: Sendable {
     private let baseUrl = "https://api.untappd.com/v4"
     private let appName: String
 
-    public init(
+    init(
         logger: Logger = Logger(label: "untappd"),
         httpClient: HTTPClient = HTTPClient.shared,
         appName: String,
         clientId: String,
-        clientSecret: String
+        clientSecret: String,
     ) {
         self.logger = logger
         self.httpClient = httpClient
@@ -27,11 +27,11 @@ final class UntappdService: Sendable {
     }
 
     // public methods
-    public func getBeerMetadata(bid: Int) async throws(UntappdError) -> UntappdResponse<UntappdBeerResponse> {
+    func getBeerMetadata(bid: Int) async throws(UntappdError) -> UntappdResponse<UntappdBeerResponse> {
         try await request(endpoint: "/beer/info/\(bid)")
     }
 
-    public func searchBeer(query: String) async throws(UntappdError) -> UntappdResponse<UntappdSearchResponse> {
+    func searchBeer(query: String) async throws(UntappdError) -> UntappdResponse<UntappdSearchResponse> {
         guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
             throw .failedToEncodeUrl
         }
@@ -55,7 +55,7 @@ final class UntappdService: Sendable {
     private func request<T: Decodable>(
         endpoint: String,
         method: HTTPMethod = .GET,
-        options: [(name: String, value: String)] = []
+        options: [(name: String, value: String)] = [],
     ) async throws(UntappdError) -> T {
         var urlString = "\(baseUrl)\(endpoint)"
         let authParams = "client_id=\(clientId)&client_secret=\(clientSecret)"
@@ -110,7 +110,7 @@ final class UntappdService: Sendable {
                     logger.error("failed to decode error response: \(error.localizedDescription)")
                     throw UntappdError.networkError(
                         statusCode: UInt(response.status.code),
-                        message: "request failed with status code \(response.status.code)"
+                        message: "request failed with status code \(response.status.code)",
                     )
                 }
             }

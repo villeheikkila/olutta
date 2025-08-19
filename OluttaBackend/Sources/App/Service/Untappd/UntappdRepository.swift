@@ -7,7 +7,7 @@ struct UntappdRepository: Sendable {
     @discardableResult
     func upsertBeer(
         _ connection: PostgresConnection,
-        beer: UntappdBeerResponse.Beer
+        beer: UntappdBeerResponse.Beer,
     ) async throws -> UUID {
         let result = try await connection.query("""
             INSERT INTO products_untappd (
@@ -78,7 +78,7 @@ struct UntappdRepository: Sendable {
         untappdProductId: UUID,
         confidenceScore: Int,
         isVerified: Bool,
-        reasoning: String
+        reasoning: String,
     ) async throws -> UUID {
         let result = try await connection.query("""
             INSERT INTO products_alko_untappd_mapping (

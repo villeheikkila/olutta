@@ -16,15 +16,15 @@ struct UntappdLLM {
     private let untappdService: UntappdService
 
     struct BeerMatchResponse: Codable, StructuredOutput {
-        public let matchingBeerId: Int?
-        public let confidenceScore: Int
-        public let reasoning: String
+        let matchingBeerId: Int?
+        let confidenceScore: Int
+        let reasoning: String
 
-        public static var example: BeerMatchResponse {
+        static var example: BeerMatchResponse {
             BeerMatchResponse(
                 matchingBeerId: 123_456,
                 confidenceScore: 85,
-                reasoning: "Strong name similarity, same brewery and matching ABV and style"
+                reasoning: "Strong name similarity, same brewery and matching ABV and style",
             )
         }
     }
@@ -33,7 +33,7 @@ struct UntappdLLM {
         openRouter: OpenAI,
         untappdService: UntappdService,
         logger: Logger,
-        minimumConfidenceThreshold: Int = 50
+        minimumConfidenceThreshold: Int = 50,
     ) {
         self.openRouter = openRouter
         self.logger = logger
@@ -41,15 +41,15 @@ struct UntappdLLM {
         self.untappdService = untappdService
     }
 
-    public func findBestMatch(
+    func findBestMatch(
         alkoProduct: AlkoProductEntity,
-        untappdResults: [UntappdSearchResponse.BeerItem]
+        untappdResults: [UntappdSearchResponse.BeerItem],
     ) async throws -> (match: UntappdSearchResponse.BeerItem, confidence: Int, reasoning: String) {
         let prompt = createPrompt(alkoProduct: alkoProduct, untappdResults: untappdResults)
         let query = ChatQuery(
             messages: [.init(role: .user, content: prompt)!],
             model: "google/gemini-2.5-flash-preview",
-            responseFormat: .jsonSchema(name: "BeerMatch", type: BeerMatchResponse.self)
+            responseFormat: .jsonSchema(name: "BeerMatch", type: BeerMatchResponse.self),
         )
         let result = try await openRouter.chats(query: query)
         if let content = result.choices.first?.message.content,
@@ -73,7 +73,7 @@ struct UntappdLLM {
                     throw UntappdLLMError.noMatchFound(
                         productName: alkoProduct.name,
                         confidence: response.confidenceScore,
-                        reasoning: response.reasoning
+                        reasoning: response.reasoning,
                     )
                 }
             } else if response.matchingBeerId != nil {
@@ -82,19 +82,19 @@ struct UntappdLLM {
                 throw UntappdLLMError.noMatchFound(
                     productName: alkoProduct.name,
                     confidence: response.confidenceScore,
-                    reasoning: "llm returned beer ID \(response.matchingBeerId!) which doesn't match any in our results. " + response.reasoning
+                    reasoning: "llm returned beer ID \(response.matchingBeerId!) which doesn't match any in our results. " + response.reasoning,
                 )
             }
             throw UntappdLLMError.noMatchFound(
                 productName: alkoProduct.name,
                 confidence: response.confidenceScore,
-                reasoning: response.reasoning
+                reasoning: response.reasoning,
             )
         }
         logger.error("failed to parse LLM JSON response",
                      metadata: ["response": .init(stringLiteral: result.choices.first?.message.content ?? "No content")])
         throw UntappdLLMError.invalidLLMResponse(
-            response: result.choices.first?.message.content ?? "No content"
+            response: result.choices.first?.message.content ?? "No content",
         )
     }
 
@@ -174,7 +174,7 @@ struct UntappdLLM {
         return query
     }
 
-    public func searchAndMatch(
+    func searchAndMatch(
         alkoProduct: AlkoProductEntity,
     ) async throws -> (match: UntappdBeerResponse.Beer, confidence: Int, reasoning: String) {
         let query = createSearchQuery(from: alkoProduct)

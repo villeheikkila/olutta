@@ -14,7 +14,7 @@ public struct CloseButtonView: View {
                 .overlay(
                     Image(systemName: "xmark")
                         .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(.primary)
+                        .foregroundColor(.primary),
                 )
         })
         .buttonStyle(.plain)

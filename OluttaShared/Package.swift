@@ -9,7 +9,7 @@ let package = Package(
     products: [
         .library(
             name: "OluttaShared",
-            targets: ["OluttaShared"]
+            targets: ["OluttaShared"],
         ),
     ],
     dependencies: [
@@ -18,11 +18,11 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "OluttaShared", dependencies: [.product(name: "HTTPTypes", package: "swift-http-types"), .product(name: "Crypto", package: "swift-crypto")]
+            name: "OluttaShared", dependencies: [.product(name: "HTTPTypes", package: "swift-http-types"), .product(name: "Crypto", package: "swift-crypto")],
         ),
         .testTarget(
             name: "OluttaSharedTests",
-            dependencies: ["OluttaShared"]
+            dependencies: ["OluttaShared"],
         ),
-    ]
+    ],
 )

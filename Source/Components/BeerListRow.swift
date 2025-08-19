@@ -58,7 +58,7 @@ struct BeerRow: View {
         .confirmationDialog(
             "Open in",
             isPresented: $showingLinkOptions,
-            titleVisibility: .visible
+            titleVisibility: .visible,
         ) {
             // Link("Alko", destination: beer.alkoUrl)
 //            if let untappdUrl = beer.untappdUrl {

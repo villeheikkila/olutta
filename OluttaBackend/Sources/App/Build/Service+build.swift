@@ -12,14 +12,14 @@ struct Services: Sendable {
             httpClient: httpClient,
             apiKey: config.alkoApiKey,
             baseUrl: config.alkoBaseUrl,
-            agent: config.alkoAgent
+            agent: config.alkoAgent,
         )
         untappd = .init(
             logger: logger,
             httpClient: httpClient,
             appName: config.appName,
             clientId: config.untappdClientId,
-            clientSecret: config.untappdClientSecret
+            clientSecret: config.untappdClientSecret,
         )
     }
 }

@@ -1,5 +1,5 @@
 {
-  "originHash" : "37082ed041055fb60e5f45fc9600870a715dd4d7bf58218c96f75f4593d1e10d",
+  "originHash" : "b1c271f6cd098f634a91e5b8aaded17090ee80c65c8517fb39c39de44a911877",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -278,15 +278,6 @@
       "state" : {
         "revision" : "a34201439c74b53f0fd71ef11741af7e7caf01e1",
         "version" : "1.4.2"
-      }
-    },
-    {
-      "identity" : "swiftuikit",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/danielsaidi/SwiftUIKit.git",
-      "state" : {
-        "revision" : "546c0efd1c6f589eb2ecbae8514868ab8ad8e6b2",
-        "version" : "5.1.1"
       }
     }
   ],

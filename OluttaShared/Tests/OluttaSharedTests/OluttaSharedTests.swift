@@ -29,7 +29,7 @@ import Testing
         method: method,
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     #expect(!result.signature.isEmpty)
     #expect(result.bodyHash != nil)
@@ -38,7 +38,7 @@ import Testing
         method: method,
         path: path,
         headers: headers,
-        body: nil
+        body: nil,
     )
     #expect(!emptyResult.signature.isEmpty)
     #expect(emptyResult.bodyHash == nil)
@@ -47,7 +47,7 @@ import Testing
         method: method,
         path: differentPath,
         headers: headers,
-        body: body
+        body: body,
     )
     #expect(result.signature != differentResult.signature)
 }

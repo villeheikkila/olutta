@@ -29,5 +29,5 @@ let untappdQueue = QueueConfiguration<Context>(
         default:
             ctx.logger.error("unknown message type \(type)")
         }
-    }
+    },
 )

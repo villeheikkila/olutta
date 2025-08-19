@@ -60,16 +60,16 @@ extension [BeerEntity] {
             return components.first ?? style
         }
         return grouped.map { category, styles in
-            let categoryCount = self.filter { beer in
+            let categoryCount = self.count(where: { beer in
                 beer.beerStyle.starts(with: category)
-            }.count
+            })
             let stylesWithCount = styles.sorted().map { style in
-                (name: style, count: self.filter { $0.beerStyle == style }.count)
+                (name: style, count: self.count(where: { $0.beerStyle == style }))
             }
             return StyleGroup(
                 category: category,
                 categoryCount: categoryCount,
-                styles: stylesWithCount
+                styles: stylesWithCount,
             )
         }
         .sorted { $0.category < $1.category }

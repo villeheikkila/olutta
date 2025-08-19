@@ -213,4 +213,10 @@ $$
   DROP COLUMN IF EXISTS notes;
 $$);
 
+SELECT apply_migration('add_unavailable_since_to_products_alko',
+$$
+  ALTER TABLE products_alko
+  ADD COLUMN unavailable_since TIMESTAMP WITH TIME ZONE;
+$$);
+
 commit;

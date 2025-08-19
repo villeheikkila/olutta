@@ -27,6 +27,15 @@ class AppModel {
     var error: Error?
     var stores: [StoreEntity] = []
     var productsByStore: [UUID: [ProductEntity]] = [:]
+    var selectedStore: StoreEntity? {
+        didSet {
+            guard let selectedStore else { return }
+            Task {
+                await getProductsByStoreId(id: selectedStore.id)
+            }
+        }
+    }
+
     let httpClient: HTTPClient
 
     init(httpClient: HTTPClient) {
@@ -71,7 +80,7 @@ class AppModel {
             StoreAnnotation(
                 id: store.id.uuidString,
                 coordinate: store.location,
-                store: store
+                store: store,
             )
         }
         await clusterManager.add(annotations)
@@ -100,7 +109,7 @@ class AppModel {
                 clusters.append(StoreClusterAnnotation(
                     id: newItem.id,
                     coordinate: newItem.coordinate,
-                    count: newItem.memberAnnotations.count
+                    count: newItem.memberAnnotations.count,
                 ))
             }
         }
