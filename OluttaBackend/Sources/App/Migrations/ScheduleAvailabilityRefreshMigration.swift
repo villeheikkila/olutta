@@ -15,7 +15,9 @@ struct ScheduleAvailabilityRefreshMigration: DatabaseMigration {
                 total_scheduled INTEGER := 0;
             BEGIN
                 FOR product_record IN 
-                    SELECT id FROM public.products_alko ORDER BY id
+                    SELECT id FROM public.products_alko
+                    WHERE unavailable_since IS NULL
+                    ORDER BY id
                 LOOP
                     PERFORM pgmq.send(
                         queue_name => 'alko',
