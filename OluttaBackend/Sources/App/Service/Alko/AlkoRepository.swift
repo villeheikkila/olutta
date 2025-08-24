@@ -492,6 +492,9 @@ struct AlkoRepository: Sendable {
         productId: UUID,
         availabilities: [(storeId: UUID, count: String?)],
     ) async throws -> [(id: (UUID, UUID), isNewRecord: Bool)] {
+        guard !availabilities.isEmpty else {
+            return []
+        }
         let columns = [
             "store_id",
             "product_id",

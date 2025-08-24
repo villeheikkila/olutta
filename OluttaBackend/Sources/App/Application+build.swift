@@ -1,10 +1,12 @@
 import AsyncHTTPClient
 import Foundation
 import Hummingbird
+import HummingbirdPostgres
 import HummingbirdRedis
 import Logging
 import OpenAI
 import PGMQ
+import PostgresMigrations
 @preconcurrency import PostgresNIO
 import RegexBuilder
 import ServiceLifecycle
@@ -35,6 +37,9 @@ public func buildApplication(
         ),
         backgroundLogger: logger,
     )
+    let migrations = DatabaseMigrations()
+    await addDatabaseMigrations(to: migrations)
+    let postgresPersist = await PostgresPersistDriver(client: postgresClient, migrations: migrations, logger: logger)
     let pgmqClient = PGMQClient(client: postgresClient)
     let redis = try RedisConnectionPoolService(
         .init(hostname: config.redisHostname, port: config.redisPort),
@@ -48,13 +53,22 @@ public func buildApplication(
     ))
     await queueService.registerQueue(alkoQueue)
     await queueService.registerQueue(untappdQueue)
-    return Application(
+    var app = Application(
         router: router,
         configuration: .init(
             address: .hostname(args.hostname, port: args.port),
             serverName: args.serverName,
         ),
-        services: [postgresClient, redis, queueService],
+        services: [postgresClient, postgresPersist, redis, queueService],
         logger: logger,
     )
+    app.beforeServerStarts {
+        try await migrations.apply(client: postgresClient, logger: logger, dryRun: false)
+    }
+    return app
+}
+
+func addDatabaseMigrations(to migrations: DatabaseMigrations) async {
+    await migrations.add(AdoptHummingbirdMigrations())
+    await migrations.add(ScheduleAvailabilityRefreshMigration())
 }

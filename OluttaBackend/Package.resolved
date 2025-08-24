@@ -1,5 +1,5 @@
 {
-  "originHash" : "5c22fd60da7f81484bf49f295fe39e39e1457b6014d03c2532a85fc83a0459ad",
+  "originHash" : "2033b666d70e082b7e5caac59e85103c559ebaecdd75b86dee2e5972c4629a5e",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "afb173a6a3be887a3484ba58ca4789efa2858e43",
         "version" : "2.15.0"
+      }
+    },
+    {
+      "identity" : "hummingbird-postgres",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/hummingbird-project/hummingbird-postgres.git",
+      "state" : {
+        "revision" : "5e2ad7c6449e749069156bce3dc0e408bcc8b9fe",
+        "version" : "0.8.0"
       }
     },
     {
@@ -44,6 +53,15 @@
       "state" : {
         "revision" : "f647fa3293133464a604eb6002f38ada5fe63c0c",
         "version" : "0.0.9"
+      }
+    },
+    {
+      "identity" : "postgres-migrations",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/hummingbird-project/postgres-migrations",
+      "state" : {
+        "revision" : "2c2dee76b220641fc2c5347c6e81c7650f5aa3d9",
+        "version" : "0.1.0"
       }
     },
     {
