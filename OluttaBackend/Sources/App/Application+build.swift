@@ -10,8 +10,10 @@ import PostgresMigrations
 @preconcurrency import PostgresNIO
 import RegexBuilder
 import ServiceLifecycle
+import JWTKit
+import HummingbirdAuth
 
-typealias AppRequestContext = BasicRequestContext
+typealias AppRequestContext = BasicAuthRequestContext<Device>
 
 public func buildApplication(
     _ args: some AppArguments,
@@ -26,6 +28,8 @@ public func buildApplication(
     )
     logger.info("starting \(args.serverName) server on port \(args.hostname):\(args.port)...")
     let config = buildConfig(args: args, env: env)
+    let jwtKeyCollection = JWTKeyCollection()
+    await jwtKeyCollection.add(hmac: HMACKey(stringLiteral: config.jwtSecret), digestAlgorithm: .sha256, kid: JWKIdentifier(stringLiteral: config.appName.lowercased()))
     let postgresClient = PostgresClient(
         configuration: .init(
             host: config.pgHost,
@@ -71,5 +75,4 @@ public func buildApplication(
 func addDatabaseMigrations(to migrations: DatabaseMigrations) async {
     await migrations.add(AdoptHummingbirdMigrations())
     await migrations.add(ScheduleAvailabilityRefreshMigration())
-    await migrations.add(CreateDeviceTableMigration())
 }

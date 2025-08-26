@@ -8,62 +8,72 @@ struct BeerRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-//            if let imageUrl = beer.imageUrl {
-//                LazyImage(url: imageUrl) { state in
-//                    if let image = state.image {
-//                        image
-//                            .resizable()
-//                            .aspectRatio(contentMode: .fit)
-//                            .frame(width: 60, height: 60)
-//                    } else {
-//                        Rectangle()
-//                            .fill(Color.gray.opacity(0.2))
-//                            .frame(width: 60, height: 60)
-//                    }
-//                }
-//            }
-            VStack(alignment: .leading, spacing: 4) {
-                Text(beer.beerStyle)
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
+            Rectangle()
+                .fill(Color.gray.opacity(0.15))
+                .frame(width: 50, height: 50)
+                .cornerRadius(8)
+            
+            VStack(alignment: .leading, spacing: 6) {
                 Text(beer.name)
                     .font(.headline)
-                Text(beer.manufacturer)
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-//                Text(beer.containerSize)
-//                    .font(.caption)
-//                    .foregroundColor(.secondary)
+                    .lineLimit(2)
                 HStack {
-                    // Text("\(beer.price, specifier: "%.2f") €")
+                    Text(beer.manufacturer)
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                    
                     Spacer()
-//                    if let rating = beer.rating {
-//                        HStack(spacing: 2) {
-//                            Image(systemName: "star.fill")
-//                                .foregroundColor(.yellow)
-//                            Text("\(rating, specifier: "%.2f")")
-//                        }
-//                    }
-
-                    // Text("\(beer.alcoholPercentage, specifier: "%.1f")%")
+                    
+                    Text(beer.beerStyle)
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(Color.blue.opacity(0.1))
+                        .foregroundColor(.blue)
+                        .cornerRadius(4)
                 }
-                .font(.caption)
-                .foregroundColor(.secondary)
+                HStack {
+                    if let price = beer.price {
+                        HStack(spacing: 2) {
+                            Image(systemName: "eurosign.circle.fill")
+                                .foregroundColor(.green)
+                                .font(.caption)
+                            Text(String(format: "%.2f €", price))
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    if let alcoholPercentage = beer.alcoholPercentage {
+                        HStack(spacing: 2) {
+                            Image(systemName: "percent")
+                                .foregroundColor(.orange)
+                                .font(.caption2)
+                            Text(String(format: "%.1f%", alcoholPercentage))
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                    }
+                }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
         .onTapGesture {
             showingLinkOptions = true
         }
         .confirmationDialog(
-            "Open in",
+            .openIn,
             isPresented: $showingLinkOptions,
             titleVisibility: .visible,
         ) {
-            // Link("Alko", destination: beer.alkoUrl)
-//            if let untappdUrl = beer.untappdUrl {
-//                Link("Untappd", destination: untappdUrl)
-//            }
+            if let alkoUrl = URL(string:  "https://www.alko.fi/tuotteet/\(beer.alkoId)") {
+                Link("Alko", destination: alkoUrl)
+            }
+            if let untappdId = beer.untappdId, let untappdUrl = URL(string: "https://untappd.com/b/_/\(untappdId)") {
+                Link(.untappd, destination: untappdUrl)
+            }
             Button("Cancel", role: .cancel) {}
         }
     }

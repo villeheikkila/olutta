@@ -15,6 +15,7 @@ func buildConfig(args: AppArguments, env: Env) -> Config {
         untappdClientSecret: env.untappdClientSecret,
         requestSignatureSalt: env.requestSignatureSalt,
         openrouterApiKey: env.openrouterApiKey,
+        jwtSecret: env.jwtSecret
     )
 }
 
@@ -34,4 +35,5 @@ struct Config: Sendable {
     let untappdClientSecret: String
     let requestSignatureSalt: String
     let openrouterApiKey: String
+    let jwtSecret: String
 }

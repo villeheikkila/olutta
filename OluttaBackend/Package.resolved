@@ -1,5 +1,5 @@
 {
-  "originHash" : "2033b666d70e082b7e5caac59e85103c559ebaecdd75b86dee2e5972c4629a5e",
+  "originHash" : "76f56f260eba75f3f55d8afdf93f1c57a726afd9ea69158ee6ef3b279f7bab20",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -20,6 +20,15 @@
       }
     },
     {
+      "identity" : "hummingbird-auth",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/hummingbird-project/hummingbird-auth.git",
+      "state" : {
+        "revision" : "8630a49acca3b38c50e29d61ab263cb7edf0b06d",
+        "version" : "2.0.2"
+      }
+    },
+    {
       "identity" : "hummingbird-postgres",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hummingbird-project/hummingbird-postgres.git",
@@ -35,6 +44,15 @@
       "state" : {
         "revision" : "3218ec5c145669b39ce4b4a27930987b4ee7c03d",
         "version" : "2.0.0"
+      }
+    },
+    {
+      "identity" : "jwt-kit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vapor/jwt-kit.git",
+      "state" : {
+        "revision" : "2033b3e661238dda3d30e36a2d40987499d987de",
+        "version" : "5.2.0"
       }
     },
     {
@@ -161,6 +179,15 @@
       "state" : {
         "revision" : "b78796709d243d5438b36e74ce3c5ec2d2ece4d8",
         "version" : "1.2.1"
+      }
+    },
+    {
+      "identity" : "swift-extras-base64",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swift-extras/swift-extras-base64.git",
+      "state" : {
+        "revision" : "dc8121fdd2b444c97d6b0534e8ad4ddecbe0d5f4",
+        "version" : "1.0.0"
       }
     },
     {

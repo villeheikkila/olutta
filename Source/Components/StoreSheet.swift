@@ -171,7 +171,7 @@ struct StoreListView: View {
         .listStyle(.plain)
         .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
         .navigationBarTitleDisplayMode(.inline)
-        .navigationTitle("Stores")
+        .navigationTitle(.stores)
     }
 
     private var filteredStores: [StoreEntity] {

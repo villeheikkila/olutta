@@ -22,6 +22,7 @@ func buildEnv(environment: Environment) throws -> Env {
         appleTeamId: environment.require("APPLE_TEAM_ID"),
         appleKeyId: environment.require("APPLE_KEY_ID"),
         applePrivateKeyBase64: environment.require("APPLE_PRIVATE_KEY_BASE64"),
+        jwtSecret: environment.require("JWT_SECRET")
     )
 }
 
@@ -45,4 +46,5 @@ struct Env {
     let appleTeamId: String
     let appleKeyId: String
     let applePrivateKeyBase64: String
+    let jwtSecret: String
 }

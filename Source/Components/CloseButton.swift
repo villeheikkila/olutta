@@ -24,6 +24,6 @@ public struct CloseButtonView: View {
             try? await Task.sleep(for: .milliseconds(100))
             action()
         }
-        .accessibilityLabel("labels.close")
+        .accessibilityLabel(.labelsClose)
     }
 }

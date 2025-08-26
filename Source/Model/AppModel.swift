@@ -27,6 +27,7 @@ class AppModel {
     var error: Error?
     var stores: [StoreEntity] = []
     var productsByStore: [UUID: [ProductEntity]] = [:]
+    var isAuthenticated: Bool = false
     var selectedStore: StoreEntity? {
         didSet {
             guard let selectedStore else { return }
@@ -113,6 +114,10 @@ class AppModel {
                 ))
             }
         }
+    }
+    
+    func createAnonymousUser() {
+        isAuthenticated = true
     }
 }
 

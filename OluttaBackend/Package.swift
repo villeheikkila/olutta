@@ -24,6 +24,8 @@ let package = Package(
         .package(url: "https://github.com/MacPaw/OpenAI.git", exact: "0.4.1"),
         .package(name: "OluttaShared", path: "../OluttaShared"),
         .package(url: "https://github.com/hummingbird-project/hummingbird-postgres.git", from: "0.5.0"),
+        .package(url: "https://github.com/vapor/jwt-kit.git", from: "5.0.0"),
+        .package(url: "https://github.com/hummingbird-project/hummingbird-auth.git", from: "2.0.0"),
     ],
     targets: [
         .executableTarget(
@@ -31,6 +33,7 @@ let package = Package(
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "Hummingbird", package: "hummingbird"),
+                .product(name: "HummingbirdAuth", package: "hummingbird-auth"),
                 .product(name: "SwiftLogTelegram", package: "swift-log-telegram"),
                 .product(name: "PostgresNIO", package: "postgres-nio"),
                 .product(name: "Logging", package: "swift-log"),
@@ -40,6 +43,7 @@ let package = Package(
                 .product(name: "OpenAI", package: "OpenAI"),
                 .product(name: "OluttaShared", package: "OluttaShared"),
                 .product(name: "HummingbirdPostgres", package: "hummingbird-postgres"),
+                .product(name: "JWTKit", package: "jwt-kit"),
             ],
             path: "Sources",
         ),

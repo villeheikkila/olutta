@@ -34,6 +34,8 @@ struct LoadingWrapper<Content: View>: View {
     var body: some View {
         if appModel.isLoading {
             ProgressView()
+        } else if !appModel.isAuthenticated {
+            IntroPage()
         } else {
             content()
         }
