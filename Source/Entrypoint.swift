@@ -7,7 +7,7 @@ struct Entrypoint: App {
     @State private var appModel = AppModel(httpClient: .init(
         baseURL: URL(string: "http://localhost:3000")!,
         secretKey: "a1b2c3d4e5f6g7h8i9j0k",
-    ))
+    ), keychain: Keychain(service: Bundle.main.bundleIdentifier!))
     @State private var timer: Timer? = nil
 
     var body: some Scene {
@@ -16,9 +16,6 @@ struct Entrypoint: App {
                 StoreMap()
             }
             .environment(appModel)
-            .task {
-                await appModel.initialize()
-            }
         }
     }
 }
@@ -32,12 +29,18 @@ struct LoadingWrapper<Content: View>: View {
     }
 
     var body: some View {
-        if appModel.isLoading {
-            ProgressView()
-        } else if !appModel.isAuthenticated {
+        switch appModel.status {
+        case .authenticating:
             IntroPage()
-        } else {
+        case .loading:
+            ProgressView()
+                .task {
+                    await appModel.initialize()
+                }
+        case .ready:
             content()
+        case .error:
+            Text("fatal")
         }
     }
 }

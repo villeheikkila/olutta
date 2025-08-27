@@ -1,8 +1,8 @@
 
-import SwiftUI
-import UIKit
 import CoreImage.CIFilterBuiltins
 import QuartzCore
+import SwiftUI
+import UIKit
 
 public enum VariableBlurDirection {
     case blurredTopClearBottom
@@ -10,32 +10,28 @@ public enum VariableBlurDirection {
 }
 
 public struct VariableBlurView: UIViewRepresentable {
-    
     public var maxBlurRadius: CGFloat = 20
-    
+
     public var direction: VariableBlurDirection = .blurredTopClearBottom
-    
+
     /// By default, variable blur starts from 0 blur radius and linearly increases to `maxBlurRadius`. Setting `startOffset` to a small negative coefficient (e.g. -0.1) will start blur from larger radius value which might look better in some cases.
     public var startOffset: CGFloat = 0
-    
+
     public init(maxBlurRadius: CGFloat = 20, direction: VariableBlurDirection = .blurredTopClearBottom, startOffset: CGFloat = 0) {
         self.maxBlurRadius = maxBlurRadius
         self.direction = direction
         self.startOffset = startOffset
     }
-    
-    public func makeUIView(context: Context) -> VariableBlurUIView {
+
+    public func makeUIView(context _: Context) -> VariableBlurUIView {
         VariableBlurUIView(maxBlurRadius: maxBlurRadius, direction: direction, startOffset: startOffset)
     }
 
-    public func updateUIView(_ uiView: VariableBlurUIView, context: Context) {
-    }
+    public func updateUIView(_: VariableBlurUIView, context _: Context) {}
 }
-
 
 /// credit https://github.com/jtrivedi/VariableBlurView
 open class VariableBlurUIView: UIVisualEffectView {
-
     public init(maxBlurRadius: CGFloat = 20, direction: VariableBlurDirection = .blurredTopClearBottom, startOffset: CGFloat = 0) {
         super.init(effect: UIBlurEffect(style: .regular))
 
@@ -44,7 +40,7 @@ open class VariableBlurUIView: UIVisualEffectView {
             print("[VariableBlur] Error: Can't find CAFilter class")
             return
         }
-        guard let variableBlur = CAFilter.self.perform(NSSelectorFromString("filterWithType:"), with: "variableBlur").takeUnretainedValue() as? NSObject else {
+        guard let variableBlur = CAFilter.perform(NSSelectorFromString("filterWithType:"), with: "variableBlur").takeUnretainedValue() as? NSObject else {
             print("[VariableBlur] Error: CAFilter can't create filterWithType: variableBlur")
             return
         }
@@ -63,29 +59,30 @@ open class VariableBlurUIView: UIVisualEffectView {
 
         // Replace the standard filters (i.e. `gaussianBlur`, `colorSaturate`, etc.) with only the variableBlur.
         backdropLayer?.filters = [variableBlur]
-        
+
         // Get rid of the visual effect view's dimming/tint view, so we don't see a hard line.
         for subview in subviews.dropFirst() {
             subview.alpha = 0
         }
     }
 
-    required public init?(coder: NSCoder) {
+    @available(*, unavailable)
+    public required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    open override func didMoveToWindow() {
+
+    override open func didMoveToWindow() {
         // fixes visible pixelization at unblurred edge (https://github.com/nikstar/VariableBlur/issues/1)
         guard let window, let backdropLayer = subviews.first?.layer else { return }
         backdropLayer.setValue(window.traitCollection.displayScale, forKey: "scale")
     }
-    
-    open override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+
+    override open func traitCollectionDidChange(_: UITraitCollection?) {
         // `super.traitCollectionDidChange(previousTraitCollection)` crashes the app
     }
-    
+
     private func makeGradientImage(width: CGFloat = 100, height: CGFloat = 100, startOffset: CGFloat, direction: VariableBlurDirection) -> CGImage { // much lower resolution might be acceptable
-        let ciGradientFilter =  CIFilter.linearGradient()
+        let ciGradientFilter = CIFilter.linearGradient()
 //        let ciGradientFilter =  CIFilter.smoothLinearGradient()
         ciGradientFilter.color0 = CIColor.black
         ciGradientFilter.color1 = CIColor.clear

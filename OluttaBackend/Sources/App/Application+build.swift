@@ -1,8 +1,10 @@
 import AsyncHTTPClient
 import Foundation
 import Hummingbird
+import HummingbirdAuth
 import HummingbirdPostgres
 import HummingbirdRedis
+import JWTKit
 import Logging
 import OpenAI
 import PGMQ
@@ -10,8 +12,6 @@ import PostgresMigrations
 @preconcurrency import PostgresNIO
 import RegexBuilder
 import ServiceLifecycle
-import JWTKit
-import HummingbirdAuth
 
 typealias AppRequestContext = BasicAuthRequestContext<Device>
 
@@ -50,7 +50,7 @@ public func buildApplication(
         logger: logger,
     )
     let context = try await buildContext(logger: logger, config: config, pgmq: pgmqClient, pg: postgresClient, redis: redis)
-    let router = buildRouter(ctx: context)
+    let router = buildRouter(ctx: context, jwtKeyCollection: jwtKeyCollection)
     let queueService = PGMQService(context: context, logger: logger, poolConfig: .init(
         maxConcurrentJobs: 3,
         pollInterval: 1,

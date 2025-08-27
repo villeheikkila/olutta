@@ -41,7 +41,6 @@ public extension PostgresClient {
                 try await connection.commit()
                 return result
             } catch {
-                print(String(reflecting: error))
                 try await connection.rollback()
                 throw error
             }

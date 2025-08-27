@@ -64,13 +64,15 @@ struct IntroPage: View {
                             .blurOpacityEffect(initialAnimation)
                     }
                     VStack(spacing: 12) {
-                        Button(.`continue`, action: {
-                            appModel.createAnonymousUser()
+                        Button(.continue, action: {
+                            Task {
+                                await appModel.createAnonymousUser()
+                            }
                         })
-                            .buttonStyle(.glass)
-                            .controlSize(.large)
-                            .blurOpacityEffect(initialAnimation)
-                            .frame(width: geometry.size.width * 0.8, height: 48)
+                        .buttonStyle(.glass)
+                        .controlSize(.large)
+                        .blurOpacityEffect(initialAnimation)
+                        .frame(width: geometry.size.width * 0.8, height: 48)
                     }
                 }
             }
@@ -158,7 +160,6 @@ struct IntroPage: View {
         }
     }
 }
-
 
 extension View {
     func blurOpacityEffect(_ show: Bool) -> some View {

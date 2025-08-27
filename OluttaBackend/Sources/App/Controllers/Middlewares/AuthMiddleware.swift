@@ -4,23 +4,6 @@ import HummingbirdAuth
 import JWTKit
 import NIOFoundationCompat
 
-struct JWTPayloadData: JWTPayload, Equatable {
-    enum CodingKeys: String, CodingKey {
-        case subject = "sub"
-        case expiration = "exp"
-        case tokenId = "token_id"
-    }
-
-    var subject: SubjectClaim
-    var expiration: ExpirationClaim
-    var tokenId: String
-
-    func verify(using algorithm: some JWTAlgorithm) async throws {
-        try self.expiration.verifyNotExpired()
-    }
-}
-
-// TODO
 struct JWTAuthenticator: AuthenticatorMiddleware, Sendable {
     typealias Context = AppRequestContext
     let jwtKeyCollection: JWTKeyCollection
@@ -31,20 +14,17 @@ struct JWTAuthenticator: AuthenticatorMiddleware, Sendable {
 
     func authenticate(request: Request, context: Context) async throws -> Device? {
         guard let jwtToken = request.headers.bearer?.token else { throw HTTPError(.unauthorized) }
-        let payload: JWTPayloadData
+        let payload: AnonymousUserPayload
         do {
-            payload = try await self.jwtKeyCollection.verify(jwtToken, as: JWTPayloadData.self)
+            payload = try await jwtKeyCollection.verify(jwtToken, as: AnonymousUserPayload.self)
         } catch {
+            context.logger.warning("invalid jwt token: \(error)")
             throw HTTPError(.unauthorized)
         }
-        guard let id = UUID(uuidString: payload.subject.value) else {
-            throw HTTPError(.unauthorized)
-        }
-        return Device(id: id)
+        return Device(id: payload.sub)
     }
 }
 
 struct Device: Sendable {
-    let id: UUID
+    let id: String
 }
-

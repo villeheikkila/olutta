@@ -1,4 +1,4 @@
-@preconcurrency import Crypto
+import Crypto
 import Foundation
 import HTTPTypes
 
@@ -14,6 +14,8 @@ public extension HTTPField.Name {
     static let requestSignature = Self("X-Request-Signature")!
     static let bodyHash = Self("X-Body-Hash")!
     static let requestId = Self("X-Request-ID")!
+    static let uploadDraftInteropVersion = Self("Upload-Draft-Interop-Version")!
+    static let uploadComplete = Self("Upload-Complete")!
 }
 
 public struct SignatureService: Sendable {
@@ -106,13 +108,19 @@ public struct SignatureService: Sendable {
             .userAgent,
             .acceptLanguage,
             .acceptEncoding,
+            .contentType,
             .connection,
             .requestSignature,
+            .contentLength,
+            .bodyHash,
+            .uploadDraftInteropVersion,
+            .uploadComplete,
         ]
-        for field in headers {
-            if !ignoredHeaders.contains(field.name) {
-                signatureComponents.append("\(field.name.canonicalName):\(field.value)")
-            }
+        let sortedHeaders = headers
+            .filter { !ignoredHeaders.contains($0.name) }
+            .sorted { $0.name.canonicalName < $1.name.canonicalName }
+        for field in sortedHeaders {
+            signatureComponents.append("\(field.name.canonicalName):\(field.value)")
         }
         if let bodyHash {
             signatureComponents.append(bodyHash)

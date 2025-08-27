@@ -12,7 +12,7 @@ struct BeerRow: View {
                 .fill(Color.gray.opacity(0.15))
                 .frame(width: 50, height: 50)
                 .cornerRadius(8)
-            
+
             VStack(alignment: .leading, spacing: 6) {
                 Text(beer.name)
                     .font(.headline)
@@ -21,9 +21,9 @@ struct BeerRow: View {
                     Text(beer.manufacturer)
                         .font(.subheadline)
                         .foregroundColor(.primary)
-                    
+
                     Spacer()
-                    
+
                     Text(beer.beerStyle)
                         .font(.caption)
                         .padding(.horizontal, 8)
@@ -43,9 +43,9 @@ struct BeerRow: View {
                                 .fontWeight(.medium)
                         }
                     }
-                    
+
                     Spacer()
-                    
+
                     if let alcoholPercentage = beer.alcoholPercentage {
                         HStack(spacing: 2) {
                             Image(systemName: "percent")
@@ -68,7 +68,7 @@ struct BeerRow: View {
             isPresented: $showingLinkOptions,
             titleVisibility: .visible,
         ) {
-            if let alkoUrl = URL(string:  "https://www.alko.fi/tuotteet/\(beer.alkoId)") {
+            if let alkoUrl = URL(string: "https://www.alko.fi/tuotteet/\(beer.alkoId)") {
                 Link("Alko", destination: alkoUrl)
             }
             if let untappdId = beer.untappdId, let untappdUrl = URL(string: "https://untappd.com/b/_/\(untappdId)") {

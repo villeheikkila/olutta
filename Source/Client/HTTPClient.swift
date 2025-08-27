@@ -13,14 +13,13 @@ final class HTTPClient {
     private let signatureService: SignatureService
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
-    private let defaultHeaders: [HTTPField]
+    private var defaultHeaders: [HTTPField]
 
     init(
         baseURL: URL,
         secretKey: String,
         defaultHeaders: [HTTPField] = [],
         session: URLSession = .shared,
-        shouldLogRequestDuration _: Bool = false,
     ) {
         logger = Logger(subsystem: "", category: "HTTPClient")
         self.baseURL = baseURL
@@ -29,6 +28,38 @@ final class HTTPClient {
         signatureService = .init(secretKey: secretKey)
         encoder = .init()
         decoder = .init()
+    }
+
+    private init(
+        baseURL: URL,
+        signatureService: SignatureService,
+        defaultHeaders: [HTTPField],
+        session: URLSession,
+        encoder: JSONEncoder,
+        decoder: JSONDecoder,
+    ) {
+        logger = Logger(subsystem: "", category: "HTTPClient")
+        self.baseURL = baseURL
+        self.session = session
+        self.defaultHeaders = defaultHeaders
+        self.signatureService = signatureService
+        self.encoder = encoder
+        self.decoder = decoder
+    }
+
+    func copyWith(
+        baseURL: URL? = nil,
+        secretKey _: String? = nil,
+        defaultHeaders: [HTTPField]? = nil,
+    ) -> HTTPClient {
+        HTTPClient(
+            baseURL: baseURL ?? self.baseURL,
+            signatureService: signatureService,
+            defaultHeaders: defaultHeaders ?? self.defaultHeaders,
+            session: session,
+            encoder: encoder,
+            decoder: decoder,
+        )
     }
 
     func request(
@@ -50,7 +81,8 @@ final class HTTPClient {
         var httpFields = HTTPFields()
         httpFields.append(.init(name: .contentType, value: "application/json"))
         httpFields.append(.init(name: .requestId, value: UUID.v7.uuidString))
-        for header in headers {
+        let _headers = defaultHeaders + headers
+        for header in _headers {
             httpFields.append(header)
         }
         let authority = if let port = url.port, let host = url.host { "\(host):\(port)" } else { url.host }
@@ -62,10 +94,10 @@ final class HTTPClient {
             headers: httpFields,
             body: body,
         )
-        httpFields.append(.init(name: .requestSignature, value: signatureResult.signature))
         if let bodyHash = signatureResult.bodyHash {
             httpFields.append(.init(name: .bodyHash, value: bodyHash))
         }
+        httpFields.append(.init(name: .requestSignature, value: signatureResult.signature))
         let httpRequest = HTTPRequest(
             method: method,
             scheme: url.scheme,
@@ -73,7 +105,11 @@ final class HTTPClient {
             path: path + (urlComponents.query.map { "?\($0)" } ?? ""),
             headerFields: httpFields,
         )
-        let result = try await session.data(for: httpRequest)
+        let result: (Data, HTTPResponse) = if let body {
+            try await session.upload(for: httpRequest, from: body)
+        } else {
+            try await session.data(for: httpRequest)
+        }
         let duration = Date().timeIntervalSince(startTime)
         logger.info("Request to \(method.rawValue) \(path) completed in \(String(format: "%.3f", duration))s")
         return result

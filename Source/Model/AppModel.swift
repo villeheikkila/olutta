@@ -19,11 +19,18 @@ struct AlkoStoreEntity: Codable {
     let outletType: String
 }
 
+enum Status {
+    case authenticating
+    case loading
+    case ready
+    case error
+}
+
 @Observable
 class AppModel {
     let logger = Logger(subsystem: "", category: "AppModel")
     var data: ResponseEntity?
-    var isLoading = true
+    var status: Status = .authenticating
     var error: Error?
     var stores: [StoreEntity] = []
     var productsByStore: [UUID: [ProductEntity]] = [:]
@@ -37,10 +44,12 @@ class AppModel {
         }
     }
 
-    let httpClient: HTTPClient
+    var httpClient: HTTPClient
+    let keychain: Keychain
 
-    init(httpClient: HTTPClient) {
+    init(httpClient: HTTPClient, keychain: Keychain) {
         self.httpClient = httpClient
+        self.keychain = keychain
     }
 
     var webStoreItems: [BeerEntity] {
@@ -51,14 +60,13 @@ class AppModel {
     }
 
     func initialize() async {
-        isLoading = true
         do {
             stores = try await httpClient.get(endpoint: .stores)
-            isLoading = false
+            status = .ready
         } catch {
             logger.error("failed to load stores: \(error.localizedDescription)")
             self.error = error
-            isLoading = false
+            status = .ready
         }
     }
 
@@ -115,9 +123,18 @@ class AppModel {
             }
         }
     }
-    
-    func createAnonymousUser() {
-        isAuthenticated = true
+
+    func createAnonymousUser() async {
+        do {
+            let response: AnonymousAuthResponse = try await httpClient.post(endpoint: .anonymous, body: AnonymousAuthRequest(deviceId: "moi", platform: .ios))
+            try keychain.set(response.token.data(using: .utf8)!, forKey: "token")
+            httpClient = httpClient.copyWith(defaultHeaders: [.init(name: .authorization, value: "Bearer \(response.token)")])
+            isAuthenticated = true
+            status = .loading
+        } catch {
+            logger.error("failed to sign in: \(error.localizedDescription)")
+            status = .error
+        }
     }
 }
 

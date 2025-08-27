@@ -15,7 +15,7 @@ func buildConfig(args: AppArguments, env: Env) -> Config {
         untappdClientSecret: env.untappdClientSecret,
         requestSignatureSalt: env.requestSignatureSalt,
         openrouterApiKey: env.openrouterApiKey,
-        jwtSecret: env.jwtSecret
+        jwtSecret: env.jwtSecret,
     )
 }
 

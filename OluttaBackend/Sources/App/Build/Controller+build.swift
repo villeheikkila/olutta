@@ -1,7 +1,8 @@
 import Foundation
 import Hummingbird
+import JWTKit
 
-func buildRouter(ctx: Context) -> Router<AppRequestContext> {
+func buildRouter(ctx: Context, jwtKeyCollection: JWTKeyCollection) -> Router<AppRequestContext> {
     let router = Router(context: AppRequestContext.self)
     router.addMiddleware {
         LogRequestsMiddleware(.info)
@@ -11,6 +12,7 @@ func buildRouter(ctx: Context) -> Router<AppRequestContext> {
     router.get("/health") { _, _ -> HTTPResponse.Status in
         return .ok
     }
-    router.addRoutes(AppController(pg: ctx.pg, persist: ctx.persist, alkoRepository: ctx.repositories.alko).endpoints)
+    router.addRoutes(AuthController(pg: ctx.pg, persist: ctx.persist, jwtKeyCollection: jwtKeyCollection).endpoints)
+    router.addRoutes(AppController(pg: ctx.pg, persist: ctx.persist, alkoRepository: ctx.repositories.alko, jwtKeyCollection: jwtKeyCollection).endpoints)
     return router
 }

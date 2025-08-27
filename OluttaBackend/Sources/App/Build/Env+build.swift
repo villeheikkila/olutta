@@ -22,7 +22,7 @@ func buildEnv(environment: Environment) throws -> Env {
         appleTeamId: environment.require("APPLE_TEAM_ID"),
         appleKeyId: environment.require("APPLE_KEY_ID"),
         applePrivateKeyBase64: environment.require("APPLE_PRIVATE_KEY_BASE64"),
-        jwtSecret: environment.require("JWT_SECRET")
+        jwtSecret: environment.require("JWT_SECRET"),
     )
 }
 

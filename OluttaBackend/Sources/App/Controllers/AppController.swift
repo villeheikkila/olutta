@@ -1,6 +1,8 @@
 import Foundation
 import Hummingbird
+import HummingbirdAuth
 import HummingbirdRedis
+import JWTKit
 import Logging
 import OluttaShared
 import PostgresNIO
@@ -9,16 +11,18 @@ struct AppController {
     let pg: PostgresClient
     let persist: RedisPersistDriver
     let alkoRepository: AlkoRepository
+    let jwtKeyCollection: JWTKeyCollection
 
     var endpoints: RouteCollection<AppRequestContext> {
         RouteCollection(context: AppRequestContext.self)
+            .add(middleware: JWTAuthenticator(jwtKeyCollection: jwtKeyCollection))
             .get(.stores, use: stores)
             .get(.productsByStoreId(UUID()), use: productsByStoreId)
     }
 }
 
 extension AppController {
-    func stores(request _: Request, context: some RequestContext) async throws -> [StoreEntity] {
+    func stores(request _: Request, context: AppRequestContext) async throws -> [StoreEntity] {
         let key = "stores::v2"
         let cachedValue = try await persist.get(key: key, as: [StoreEntity].self)
         if let cachedValue {
@@ -46,7 +50,7 @@ extension AppController {
 }
 
 extension AppController {
-    func productsByStoreId(request _: Request, context: some RequestContext) async throws -> [ProductEntity] {
+    func productsByStoreId(request _: Request, context: AppRequestContext) async throws -> [ProductEntity] {
         guard let id = context.parameters.get("id", as: UUID.self) else { throw HTTPError(.badRequest) }
         let products = try await pg.withTransaction { tx in
             try await alkoRepository.getProductsByStoreId(tx, id: id)

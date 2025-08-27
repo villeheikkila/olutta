@@ -25,7 +25,9 @@ public struct RequestSignatureMiddleware<Context: RequestContext>: RouterMiddlew
                 headers: request.headers,
                 body: data,
             )
-            return try await next(request, context)
+            var newRequest = request
+            newRequest.body = .init(asyncSequence: CollectionOfOne(ByteBuffer(data: data)).async)
+            return try await next(newRequest, context)
         } catch {
             context.logger.error("signature verification failed: \(error)")
             // return a generic unauthorized error to the client
