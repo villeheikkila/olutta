@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "OluttaBackend",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v14), .iOS(.v26)],
     products: [
         .executable(name: "OluttaBackend", targets: ["OluttaBackend"]),
     ],

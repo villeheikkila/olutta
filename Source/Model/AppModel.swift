@@ -35,6 +35,7 @@ class AppModel {
     var stores: [StoreEntity] = []
     var productsByStore: [UUID: [ProductEntity]] = [:]
     var isAuthenticated: Bool = false
+    var pushNotificationToken: String?
     var selectedStore: StoreEntity? {
         didSet {
             guard let selectedStore else { return }
@@ -125,9 +126,11 @@ class AppModel {
     }
 
     func createAnonymousUser() async {
+        let deviceID = UUID().uuidString
         do {
-            let response: AnonymousAuthResponse = try await httpClient.post(endpoint: .anonymous, body: AnonymousAuthRequest(deviceId: "moi", platform: .ios))
+            let response: AnonymousAuthResponse = try await httpClient.post(endpoint: .anonymous, body: AnonymousAuthRequest(deviceId: deviceID, platform: .ios))
             try keychain.set(response.token.data(using: .utf8)!, forKey: "token")
+            try keychain.set(deviceID.data(using: .utf8)!, forKey: "device-id")
             httpClient = httpClient.copyWith(defaultHeaders: [.init(name: .authorization, value: "Bearer \(response.token)")])
             isAuthenticated = true
             status = .loading
@@ -135,6 +138,18 @@ class AppModel {
             logger.error("failed to sign in: \(error.localizedDescription)")
             status = .error
         }
+        guard let pushNotificationToken else { return }
+        do {
+            print("rtadsadasd")
+            let response: UserPatchResponse = try await httpClient.patch(endpoint: .user, body: UserPatchRequest(pushNotificationToken: pushNotificationToken))
+            print("resfresh push notification token success")
+        } catch {
+            logger.error("failed to refresh push notification token: \(error.localizedDescription)")
+        }
+    }
+
+    func refreshPushNotificationToken(pushNotificationToken: String) {
+        self.pushNotificationToken = pushNotificationToken
     }
 }
 

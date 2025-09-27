@@ -5,6 +5,7 @@ public enum APIEndpoint {
     case productsByStoreId(UUID)
     case anonymous
     case currentUser
+    case user
 
     public var path: String {
         switch self {
@@ -16,6 +17,8 @@ public enum APIEndpoint {
             "/v1/auth/anonymous"
         case .currentUser:
             "/v1/users/me"
+        case .user:
+            "/v1/user"
         }
     }
 
@@ -29,6 +32,8 @@ public enum APIEndpoint {
             "/v1/auth/anonymous"
         case .currentUser:
             "/v1/users/me"
+        case .user:
+            "/v1/user"
         }
     }
 }

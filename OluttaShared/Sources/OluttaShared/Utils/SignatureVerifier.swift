@@ -103,21 +103,12 @@ public struct SignatureService: Sendable {
             signatureComponents.append(authority)
         }
         signatureComponents.append(path)
-        let ignoredHeaders: Set<HTTPField.Name> = [
-            .accept,
-            .userAgent,
-            .acceptLanguage,
-            .acceptEncoding,
-            .contentType,
-            .connection,
-            .requestSignature,
-            .contentLength,
+        let includedHeaders: Set<HTTPField.Name> = [
+            .requestId,
             .bodyHash,
-            .uploadDraftInteropVersion,
-            .uploadComplete,
         ]
         let sortedHeaders = headers
-            .filter { !ignoredHeaders.contains($0.name) }
+            .filter { includedHeaders.contains($0.name) }
             .sorted { $0.name.canonicalName < $1.name.canonicalName }
         for field in sortedHeaders {
             signatureComponents.append("\(field.name.canonicalName):\(field.value)")

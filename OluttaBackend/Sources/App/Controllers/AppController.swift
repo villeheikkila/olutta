@@ -16,6 +16,7 @@ struct AppController {
     var endpoints: RouteCollection<AppRequestContext> {
         RouteCollection(context: AppRequestContext.self)
             .add(middleware: JWTAuthenticator(jwtKeyCollection: jwtKeyCollection))
+            .patch(.user, use: updateUser)
             .get(.stores, use: stores)
             .get(.productsByStoreId(UUID()), use: productsByStoreId)
     }
@@ -60,5 +61,22 @@ extension AppController {
                 id: $0.alkoProduct.id, alkoId: $0.alkoProduct.productExternalId, untappdId: $0.untappdProduct?.productExternalId, name: $0.alkoProduct.name, manufacturer: $0.untappdProduct?.breweryName, price: $0.alkoProduct.price, alcoholPercentage: $0.alkoProduct.abv, beerStyle: $0.untappdProduct?.style,
             )
         }
+    }
+}
+
+extension AppController {
+    func updateUser(request: Request, context: AppRequestContext) async throws -> Response {
+        let requestBody = try await request.decode(as: UserPatchRequest.self, context: context)
+        print("received: \(requestBody)")
+        let body = UserPatchResponse()
+        let data = try JSONEncoder().encode(body)
+        return Response(
+            status: .ok,
+            headers: [
+                .contentType: "application/json; charset=utf-8",
+                .contentLength: "\(data.count)",
+            ],
+            body: .init(byteBuffer: ByteBuffer(data: data)),
+        )
     }
 }

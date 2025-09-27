@@ -162,6 +162,30 @@ final class HTTPClient {
             throw HTTPClientError.decodingFailed(error)
         }
     }
+    
+    func patch<T: Decodable>(
+        path: String,
+        body: some Encodable,
+        queryItems: [URLQueryItem]? = nil,
+        headers: [HTTPField] = [],
+    ) async throws -> T {
+        let bodyData = try encoder.encode(body)
+        let (data, response) = try await request(
+            method: .patch,
+            path: path,
+            queryItems: queryItems,
+            headers: headers,
+            body: bodyData,
+        )
+        guard (200 ... 299).contains(response.status.code) else {
+            throw HTTPClientError.httpError(code: response.status.code, data: data)
+        }
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw HTTPClientError.decodingFailed(error)
+        }
+    }
 }
 
 extension HTTPClient {
@@ -200,6 +224,20 @@ extension HTTPClient {
         headers: [HTTPField] = [],
     ) async throws -> T {
         try await post(
+            path: endpoint.path,
+            body: body,
+            queryItems: queryItems,
+            headers: headers,
+        )
+    }
+    
+    func patch<T: Decodable>(
+        endpoint: APIEndpoint,
+        body: some Encodable,
+        queryItems: [URLQueryItem]? = nil,
+        headers: [HTTPField] = [],
+    ) async throws -> T {
+        try await patch(
             path: endpoint.path,
             body: body,
             queryItems: queryItems,

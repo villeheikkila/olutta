@@ -27,6 +27,8 @@ import Testing
 
     let result = try service.createSignature(
         method: method,
+        scheme: nil,
+        authority: nil,
         path: path,
         headers: headers,
         body: body,
@@ -36,6 +38,8 @@ import Testing
     #expect(!result.bodyHash!.isEmpty)
     let emptyResult = try service.createSignature(
         method: method,
+        scheme: nil,
+        authority: nil,
         path: path,
         headers: headers,
         body: nil,
@@ -45,6 +49,8 @@ import Testing
     let differentPath = "/api/different"
     let differentResult = try service.createSignature(
         method: method,
+        scheme: nil,
+        authority: nil,
         path: differentPath,
         headers: headers,
         body: body,
