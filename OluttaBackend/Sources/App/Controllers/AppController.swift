@@ -28,7 +28,7 @@ extension AppController {
         let cachedValue = try await persist.get(key: key, as: [StoreEntity].self)
         if let cachedValue {
             context.logger.info("returning cached stores")
-            return Response.makeJSONResponse(body: cachedValue)
+            return try Response.makeJSONResponse(body: cachedValue)
         }
         let stores = try await pg.withTransaction { tx in
             try await alkoRepository.getStores(tx)
@@ -46,7 +46,7 @@ extension AppController {
             )
         }
         try await persist.set(key: key, value: body, expires: .seconds(60))
-        return Response.makeJSONResponse(body: body)
+        return try Response.makeJSONResponse(body: body)
     }
 }
 
@@ -56,19 +56,22 @@ extension AppController {
         let products = try await pg.withTransaction { tx in
             try await alkoRepository.getProductsByStoreId(tx, id: id)
         }
-        let responseBody =  products.map {
+        let responseBody = products.map {
             ProductEntity(
                 id: $0.alkoProduct.id, alkoId: $0.alkoProduct.productExternalId, untappdId: $0.untappdProduct?.productExternalId, name: $0.alkoProduct.name, manufacturer: $0.untappdProduct?.breweryName, price: $0.alkoProduct.price, alcoholPercentage: $0.alkoProduct.abv, beerStyle: $0.untappdProduct?.style,
             )
         }
-        return Response.makeJSONResponse(body: responseBody)
+        return try Response.makeJSONResponse(body: responseBody)
     }
 }
 
 extension AppController {
     func updateUser(request: Request, context: AppRequestContext) async throws -> Response {
         let requestBody = try await request.decode(as: UserPatchRequest.self, context: context)
+        guard let device = context.identity else {
+            throw HTTPError(.unauthorized)
+        }
         let responseBody = UserPatchResponse()
-        return Response.makeJSONResponse(body: responseBody)
+        return try Response.makeJSONResponse(body: responseBody)
     }
 }

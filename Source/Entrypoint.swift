@@ -5,7 +5,7 @@ import SwiftUI
 struct Entrypoint: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var appModel = AppModel(httpClient: .init(
-        baseURL: URL(string: "http://localhost:3000")!,
+        baseURL: URL(string: "https://0642c83e6da0.ngrok-free.app")!,
         secretKey: "a1b2c3d4e5f6g7h8i9j0k",
     ), keychain: Keychain(service: Bundle.main.bundleIdentifier!))
 
@@ -16,7 +16,7 @@ struct Entrypoint: App {
             }
             .environment(appModel)
             .onReceive(for: .pushNotificationTokenObtained, subject: PushNotificationManager.shared) { message in Task {
-               await appModel.refreshPushNotificationToken(pushNotificationToken: message.token)
+                appModel.refreshPushNotificationToken(pushNotificationToken: message.token)
             }
             }
         }

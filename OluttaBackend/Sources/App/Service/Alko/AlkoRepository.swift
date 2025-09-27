@@ -507,7 +507,6 @@ struct AlkoRepository: Sendable {
             bindings.append(availability.storeId)
             bindings.append(productId)
             bindings.append(availability.count)
-
             let base = index * columns.count
             let paramIndices = (1 ... columns.count).map { "$\(base + $0)" }
             let placeholder = "(\(paramIndices.joined(separator: ", ")))"

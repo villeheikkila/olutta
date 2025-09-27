@@ -12,7 +12,7 @@ func buildRouter(ctx: Context, jwtKeyCollection: JWTKeyCollection) -> Router<App
     router.get("/health") { _, _ -> HTTPResponse.Status in
         return .ok
     }
-    router.addRoutes(AuthController(pg: ctx.pg, persist: ctx.persist, jwtKeyCollection: jwtKeyCollection).endpoints)
+    router.addRoutes(AuthController(pg: ctx.pg, logger: ctx.logger, persist: ctx.persist, jwtKeyCollection: jwtKeyCollection, deviceRepository: ctx.repositories.device).endpoints)
     router.addRoutes(AppController(pg: ctx.pg, persist: ctx.persist, alkoRepository: ctx.repositories.alko, jwtKeyCollection: jwtKeyCollection).endpoints)
     return router
 }

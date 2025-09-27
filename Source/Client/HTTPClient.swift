@@ -162,7 +162,7 @@ final class HTTPClient {
             throw HTTPClientError.decodingFailed(error)
         }
     }
-    
+
     func patch<T: Decodable>(
         path: String,
         body: some Encodable,
@@ -230,7 +230,7 @@ extension HTTPClient {
             headers: headers,
         )
     }
-    
+
     func patch<T: Decodable>(
         endpoint: APIEndpoint,
         body: some Encodable,

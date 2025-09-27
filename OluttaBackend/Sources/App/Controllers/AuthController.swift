@@ -8,8 +8,10 @@ import PostgresNIO
 
 struct AuthController {
     let pg: PostgresClient
+    let logger: Logger
     let persist: RedisPersistDriver
     let jwtKeyCollection: JWTKeyCollection
+    let deviceRepository: DeviceRepository
 
     var endpoints: RouteCollection<AppRequestContext> {
         RouteCollection(context: AppRequestContext.self)
@@ -18,8 +20,9 @@ struct AuthController {
 }
 
 struct AnonymousUserPayload: JWTPayload {
-    let sub: String
-    let deviceId: String
+    let sub: UUID
+    let deviceId: UUID
+    let tokenId: UUID
     let iat: Date
     let exp: Date
 
@@ -29,30 +32,30 @@ struct AnonymousUserPayload: JWTPayload {
 }
 
 extension AuthController {
-    func anonymous(request: Request, context: some RequestContext) async throws -> Response {
+    func anonymous(request: Request, context: AppRequestContext) async throws -> Response {
         let authRequest = try await request.decode(as: AnonymousAuthRequest.self, context: context)
-        let existingUserId = try await persist.get(key: "device:\(authRequest.deviceId)", as: String.self)
-        let userId: String
-        if let existingUserId {
-            userId = existingUserId
-            context.logger.info("Existing anonymous user", metadata: ["user_id": .string(userId)])
-        } else {
-            userId = UUID().uuidString
-            try await persist.set(key: "device:\(authRequest.deviceId)", value: userId, expires: .seconds(365 * 24 * 3600))
-            context.logger.info("Created new anonymous user", metadata: ["user_id": .string(userId)])
+        return try await pg.withTransaction { tx in
+            let identity = context.identity
+            let tokenId = UUID()
+            let deviceId = identity?.deviceId ?? authRequest.deviceId
+            let (_, isNew) = try await deviceRepository.upsertDevice(tx, device: .init(id: authRequest.deviceId, pushNotificationToken: authRequest.pushNotificationToken, isSandbox: authRequest.isDevelopmentDevice, tokenId: tokenId))
+            if isNew {
+                context.logger.info("new device id registered")
+            }
+            let payload = AnonymousUserPayload(
+                sub: tokenId,
+                deviceId: authRequest.deviceId,
+                tokenId: tokenId,
+                iat: Date(),
+                exp: Date().addingTimeInterval(90 * 24 * 3600),
+            )
+            let token = try await jwtKeyCollection.sign(payload)
+            let body = AnonymousAuthResponse(
+                deviceId: deviceId,
+                token: token,
+                expiresAt: payload.exp,
+            )
+            return try Response.makeJSONResponse(body: body)
         }
-        let payload = AnonymousUserPayload(
-            sub: userId,
-            deviceId: authRequest.deviceId,
-            iat: Date(),
-            exp: Date().addingTimeInterval(90 * 24 * 3600),
-        )
-        let token = try await jwtKeyCollection.sign(payload)
-        let body = AnonymousAuthResponse(
-            userId: userId,
-            token: token,
-            expiresAt: payload.exp,
-        )
-        return Response.makeJSONResponse(body: body)
     }
 }
