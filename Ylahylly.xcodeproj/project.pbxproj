@@ -17,6 +17,8 @@
 
 /* Begin PBXFileReference section */
 		5C09226B2DBEBF2F00001B01 /* Dockerfile */ = {isa = PBXFileReference; lastKnownFileType = text; path = Dockerfile; sourceTree = "<group>"; };
+		5C10897B2E87F62600D61E94 /* Ylahylly-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Ylahylly-Info.plist"; sourceTree = "<group>"; };
+		5C10897C2E87F64900D61E94 /* YlahyllyRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = YlahyllyRelease.entitlements; sourceTree = "<group>"; };
 		5C33260E2DA0FD8E008C1C6C /* OluttaBackend */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = OluttaBackend; sourceTree = "<group>"; };
 		5C33260F2DA0FD9F008C1C6C /* OluttaShared */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = OluttaShared; sourceTree = "<group>"; };
 		5C80F5F82D3D88220040F4B8 /* Ylahylly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ylahylly.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -62,6 +64,8 @@
 		5C80F5EF2D3D88220040F4B8 = {
 			isa = PBXGroup;
 			children = (
+				5C10897C2E87F64900D61E94 /* YlahyllyRelease.entitlements */,
+				5C10897B2E87F62600D61E94 /* Ylahylly-Info.plist */,
 				5C09226B2DBEBF2F00001B01 /* Dockerfile */,
 				5C33260F2DA0FD9F008C1C6C /* OluttaShared */,
 				5C33260E2DA0FD8E008C1C6C /* OluttaBackend */,
@@ -302,6 +306,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Ylahylly-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Ylähylly";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -335,7 +340,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Configuration/release.entitlements;
+				CODE_SIGN_ENTITLEMENTS = YlahyllyRelease.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Source/Preview Content\"";
@@ -343,6 +348,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Ylahylly-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Ylähylly";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;

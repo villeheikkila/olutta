@@ -14,9 +14,9 @@ struct AddDeviceTableMigration: DatabaseMigration {
                 updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
             );
             """,
-            logger: logger
+            logger: logger,
         )
-        
+
         try await connection.query(
             """
             CREATE OR REPLACE FUNCTION fnc__update_updated_at_column()
@@ -27,9 +27,9 @@ struct AddDeviceTableMigration: DatabaseMigration {
             END;
             $$ language 'plpgsql';
             """,
-            logger: logger
+            logger: logger,
         )
-        
+
         try await connection.query(
             """
             CREATE TRIGGER tg__update_device_updated_at 
@@ -37,7 +37,7 @@ struct AddDeviceTableMigration: DatabaseMigration {
                 FOR EACH ROW 
                 EXECUTE FUNCTION fnc__update_updated_at_column();
             """,
-            logger: logger
+            logger: logger,
         )
     }
 
@@ -48,7 +48,7 @@ struct AddDeviceTableMigration: DatabaseMigration {
             DROP FUNCTION IF EXISTS fnc__update_updated_at_column();
             DROP TABLE IF EXISTS public.device CASCADE;
             """,
-            logger: logger
+            logger: logger,
         )
     }
 }

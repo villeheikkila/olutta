@@ -13,7 +13,6 @@ struct AlkoMarker: View {
                 .background(.ultraThinMaterial)
                 .clipShape(Circle())
                 .shadow(radius: 2)
-
             if let count {
                 Text("\(count)")
                     .font(.caption.bold())

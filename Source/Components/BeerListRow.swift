@@ -17,41 +17,38 @@ struct BeerRow: View {
                 Text(beer.name)
                     .font(.headline)
                     .lineLimit(2)
-                HStack {
-                    Text(beer.manufacturer)
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-
-                    Spacer()
-
-                    Text(beer.beerStyle)
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(Color.blue.opacity(0.1))
-                        .foregroundColor(.blue)
-                        .cornerRadius(4)
+                if beer.manufacturer != nil || beer.beerStyle != nil {
+                    HStack {
+                        if let manufacturer = beer.manufacturer {
+                            Text(manufacturer)
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                        }
+                        Spacer()
+                        if let beerStyle = beer.beerStyle {
+                            Text(beerStyle)
+                                .font(.caption)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .cornerRadius(4)
+                        }
+                    }
                 }
                 HStack {
                     if let price = beer.price {
                         HStack(spacing: 2) {
-                            Image(systemName: "eurosign.circle.fill")
-                                .foregroundColor(.green)
-                                .font(.caption)
-                            Text(String(format: "%.2f €", price))
+                            Text(price.formatted(.currency(code: "EUR")))
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                         }
                     }
-
                     Spacer()
-
                     if let alcoholPercentage = beer.alcoholPercentage {
                         HStack(spacing: 2) {
                             Image(systemName: "percent")
                                 .foregroundColor(.orange)
                                 .font(.caption2)
-                            Text(String(format: "%.1f%", alcoholPercentage))
+                            Text(alcoholPercentage.formatted(.number.precision(.fractionLength(1))))
                                 .font(.caption)
                                 .fontWeight(.medium)
                         }

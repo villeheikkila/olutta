@@ -71,7 +71,10 @@ final class HTTPClient {
     ) async throws -> (Data, HTTPResponse) {
         let startTime = Date()
 
-        var urlComponents = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: true)!
+        let urlComponents = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: true)
+        guard var urlComponents else {
+            throw HTTPClientError.invalidURL
+        }
         if let queryItems, !queryItems.isEmpty {
             urlComponents.queryItems = queryItems
         }
