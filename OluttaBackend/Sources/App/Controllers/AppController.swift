@@ -67,9 +67,8 @@ extension AppController {
 extension AppController {
     func updateUser(request: Request, context: AppRequestContext) async throws -> Response {
         let requestBody = try await request.decode(as: UserPatchRequest.self, context: context)
-        print("received: \(requestBody)")
-        let body = UserPatchResponse()
-        let data = try JSONEncoder().encode(body)
+        let responseBody = UserPatchResponse()
+        let data = try JSONEncoder().encode(responseBody)
         return Response(
             status: .ok,
             headers: [
