@@ -26,6 +26,7 @@ let package = Package(
         .package(url: "https://github.com/hummingbird-project/hummingbird-postgres.git", from: "0.5.0"),
         .package(url: "https://github.com/vapor/jwt-kit.git", from: "5.0.0"),
         .package(url: "https://github.com/hummingbird-project/hummingbird-auth.git", from: "2.0.0"),
+        .package(url: "https://github.com/swift-server-community/APNSwift.git", from: "6.0.0"),
     ],
     targets: [
         .executableTarget(
@@ -44,6 +45,7 @@ let package = Package(
                 .product(name: "OluttaShared", package: "OluttaShared"),
                 .product(name: "HummingbirdPostgres", package: "hummingbird-postgres"),
                 .product(name: "JWTKit", package: "jwt-kit"),
+                .product(name: "APNS", package: "apnswift"),
             ],
             path: "Sources",
         ),

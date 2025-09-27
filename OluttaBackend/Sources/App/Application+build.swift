@@ -9,7 +9,7 @@ import Logging
 import OpenAI
 import PGMQ
 import PostgresMigrations
-@preconcurrency import PostgresNIO
+import PostgresNIO
 import RegexBuilder
 import ServiceLifecycle
 
@@ -57,6 +57,19 @@ public func buildApplication(
     ))
     await queueService.registerQueue(alkoQueue)
     await queueService.registerQueue(untappdQueue)
+//    let client = APNSClient(
+//        configuration: .init(
+//            authenticationMethod: .jwt(
+//                privateKey: try .init(pemRepresentation: privateKey),
+//                keyIdentifier: keyIdentifier,
+//                teamIdentifier: teamIdentifier
+//            ),
+//            environment: .development
+//        ),
+//        eventLoopGroupProvider: .createNew,
+//        responseDecoder: JSONDecoder(),
+//        requestEncoder: JSONEncoder()
+//    )
     var app = Application(
         router: router,
         configuration: .init(

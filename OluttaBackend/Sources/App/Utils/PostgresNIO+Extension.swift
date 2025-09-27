@@ -1,5 +1,5 @@
 import Foundation
-@preconcurrency import PostgresNIO
+import PostgresNIO
 
 extension PostgresConnection {
     @_disfavoredOverload
