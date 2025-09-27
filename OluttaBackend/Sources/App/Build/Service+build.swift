@@ -17,7 +17,7 @@ struct Services: Sendable {
         untappd = .init(
             logger: logger,
             httpClient: httpClient,
-            appName: config.appName,
+            appName: config.serverName,
             clientId: config.untappdClientId,
             clientSecret: config.untappdClientSecret,
         )

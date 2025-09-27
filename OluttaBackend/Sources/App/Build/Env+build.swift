@@ -1,38 +1,18 @@
+import Configuration
 import Foundation
 import Hummingbird
+import Logging
 
-func buildEnv(environment: Environment) throws -> Env {
-    try Env(
-        pgHost: environment.get("DB_HOST") ?? "localhost",
-        pgPort: environment.get("DB_PORT", as: Int.self) ?? 5432,
-        pgUsername: environment.get("DB_USER") ?? "postgres",
-        pgPassword: environment.get("DB_PASSWORD") ?? "postgres",
-        pgDatabase: environment.get("DB_NAME") ?? "postgres",
-        redisHostname: environment.get("REDIS_HOSTNAME") ?? "localhost",
-        redisPort: environment.get("REDIS_PORT", as: Int.self) ?? 6379,
-        telegramApiKey: environment.require("TELEGRAM_API_KEY"),
-        telegramErrorChatId: environment.require("TELEGRAM_ERROR_CHAT_ID"),
-        alkoBaseUrl: environment.require("ALKO_BASE_URL"),
-        alkoAgent: environment.require("ALKO_AGENT"),
-        alkoApiKey: environment.require("ALKO_API_KEY"),
-        untappdClientId: environment.require("UNTAPPD_CLIENT_ID"),
-        untappdClientSecret: environment.require("UNTAPPD_CLIENT_SECRET"),
-        requestSignatureSalt: environment.require("REQUEST_SIGNATURE_SALT"),
-        openrouterApiKey: environment.require("OPENROUTER_API_KEY"),
-        appleTeamId: environment.require("APPLE_TEAM_ID"),
-        appleKeyId: environment.require("APPLE_KEY_ID"),
-        applePrivateKeyBase64: environment.require("APPLE_PRIVATE_KEY_BASE64"),
-        jwtSecret: environment.require("JWT_SECRET"),
-    )
-}
-
-struct Env {
+struct Config {
+    let host: String
+    let port: Int
+    let serverName: String
     let pgHost: String
     let pgPort: Int
     let pgUsername: String
     let pgPassword: String
     let pgDatabase: String
-    let redisHostname: String
+    let redisHost: String
     let redisPort: Int
     let telegramApiKey: String
     let telegramErrorChatId: String
@@ -47,4 +27,39 @@ struct Env {
     let appleKeyId: String
     let applePrivateKeyBase64: String
     let jwtSecret: String
+    let logLevel: Logger.Level
+
+    init(config: ConfigReader) throws {
+        serverName = try config.requiredString(forKey: "server.name")
+        host = try config.requiredString(forKey: "server.host")
+        port = try config.requiredInt(forKey: "server.port")
+        let logLevel = try config.requiredString(forKey: "server.log.level")
+        self.logLevel = .init(from: logLevel)
+        pgHost = try config.requiredString(forKey: "db.host")
+        pgPort = try config.requiredInt(forKey: "db.port")
+        pgUsername = try config.requiredString(forKey: "db.user")
+        pgPassword = try config.requiredString(forKey: "db.password")
+        pgDatabase = try config.requiredString(forKey: "db.name")
+        redisHost = try config.requiredString(forKey: "redis.host")
+        redisPort = try config.requiredInt(forKey: "redis.port")
+        telegramApiKey = try config.requiredString(forKey: "telegram.api.key")
+        telegramErrorChatId = try config.requiredString(forKey: "telegram.error.chat.id")
+        alkoBaseUrl = try config.requiredString(forKey: "alko.base.url")
+        alkoAgent = try config.requiredString(forKey: "alko.agent")
+        alkoApiKey = try config.requiredString(forKey: "alko.api.key")
+        untappdClientId = try config.requiredString(forKey: "untappd.client.id")
+        untappdClientSecret = try config.requiredString(forKey: "untappd.client.secret")
+        requestSignatureSalt = try config.requiredString(forKey: "request.signature.salt")
+        openrouterApiKey = try config.requiredString(forKey: "openrouter.api.key")
+        appleTeamId = try config.requiredString(forKey: "apple.team.id")
+        appleKeyId = try config.requiredString(forKey: "apple.key.id")
+        applePrivateKeyBase64 = try config.requiredString(forKey: "apple.private.key.base64")
+        jwtSecret = try config.requiredString(forKey: "jwt.secret")
+    }
+}
+
+public extension Logger.Level {
+    init(from string: String) {
+        self = Logger.Level(rawValue: string.lowercased()) ?? .info
+    }
 }

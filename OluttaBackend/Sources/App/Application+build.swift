@@ -1,3 +1,5 @@
+import APNS
+import APNSCore
 import AsyncHTTPClient
 import Foundation
 import Hummingbird
@@ -15,21 +17,18 @@ import ServiceLifecycle
 
 typealias AppRequestContext = BasicAuthRequestContext<Device>
 
-public func buildApplication(
-    _ args: some AppArguments,
-    environment: Environment,
+func buildApplication(
+    config: Config,
 ) async throws -> some ApplicationProtocol {
-    let env = try buildEnv(environment: environment)
     let logger = buildLogger(
-        label: args.serverName,
-        telegramApiKey: env.telegramApiKey,
-        telegramErrorChatId: env.telegramErrorChatId,
-        logLevel: args.logLevel,
+        label: config.serverName,
+        telegramApiKey: config.telegramApiKey,
+        telegramErrorChatId: config.telegramErrorChatId,
+        logLevel: config.logLevel,
     )
-    logger.info("starting \(args.serverName) server on port \(args.hostname):\(args.port)...")
-    let config = buildConfig(args: args, env: env)
+    logger.info("starting \(config.serverName) server on port \(config.host):\(config.port)...")
     let jwtKeyCollection = JWTKeyCollection()
-    await jwtKeyCollection.add(hmac: HMACKey(stringLiteral: config.jwtSecret), digestAlgorithm: .sha256, kid: JWKIdentifier(stringLiteral: config.appName.lowercased()))
+    await jwtKeyCollection.add(hmac: HMACKey(stringLiteral: config.jwtSecret), digestAlgorithm: .sha256, kid: JWKIdentifier(stringLiteral: config.serverName.lowercased()))
     let postgresClient = PostgresClient(
         configuration: .init(
             host: config.pgHost,
@@ -46,7 +45,7 @@ public func buildApplication(
     let postgresPersist = await PostgresPersistDriver(client: postgresClient, migrations: migrations, logger: logger)
     let pgmqClient = PGMQClient(client: postgresClient)
     let redis = try RedisConnectionPoolService(
-        .init(hostname: config.redisHostname, port: config.redisPort),
+        .init(hostname: config.redisHost, port: config.redisPort),
         logger: logger,
     )
     let context = try await buildContext(logger: logger, config: config, pgmq: pgmqClient, pg: postgresClient, redis: redis)
@@ -73,8 +72,8 @@ public func buildApplication(
     var app = Application(
         router: router,
         configuration: .init(
-            address: .hostname(args.hostname, port: args.port),
-            serverName: args.serverName,
+            address: .hostname(config.host, port: config.port),
+            serverName: config.serverName,
         ),
         services: [postgresClient, postgresPersist, redis, queueService],
         logger: logger,

@@ -4,13 +4,14 @@ import PackageDescription
 
 let package = Package(
     name: "OluttaBackend",
-    platforms: [.macOS(.v14), .iOS(.v26)],
+    platforms: [.macOS(.v26), .iOS(.v26)],
     products: [
         .executable(name: "OluttaBackend", targets: ["OluttaBackend"]),
     ],
     dependencies: [
         .package(url: "https://github.com/hummingbird-project/hummingbird.git", from: "2.8.0"),
         .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.23.0"),
+        .package(url: "https://github.com/apple/swift-configuration", .upToNextMinor(from: "0.1.0")),
         .package(url: "https://github.com/villeheikkila/swift-log-telegram", from: "0.0.3"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.2"),
@@ -32,6 +33,7 @@ let package = Package(
             name: "OluttaBackend",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                .product(name: "Configuration", package: "swift-configuration"),
                 .product(name: "Hummingbird", package: "hummingbird"),
                 .product(name: "HummingbirdAuth", package: "hummingbird-auth"),
                 .product(name: "SwiftLogTelegram", package: "swift-log-telegram"),
