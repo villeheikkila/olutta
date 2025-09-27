@@ -53,14 +53,6 @@ extension AuthController {
             token: token,
             expiresAt: payload.exp,
         )
-        let data = try JSONEncoder().encode(body)
-        return Response(
-            status: .ok,
-            headers: [
-                .contentType: "application/json; charset=utf-8",
-                .contentLength: "\(data.count)",
-            ],
-            body: .init(byteBuffer: ByteBuffer(data: data)),
-        )
+        return Response.makeJSONResponse(body: body)
     }
 }
