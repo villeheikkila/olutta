@@ -2,7 +2,7 @@ import Foundation
 import OpenAI
 import RegexBuilder
 
-let untappdQueue = QueueConfiguration<Context>(
+let untappdQueue = QueueConfiguration<QueueContext>(
     name: "untappd",
     policy: .init(isSequential: true),
     handler: { ctx, message in

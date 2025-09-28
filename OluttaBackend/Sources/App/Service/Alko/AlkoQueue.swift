@@ -1,6 +1,6 @@
 import Foundation
 
-let alkoQueue = QueueConfiguration<Context>(
+let alkoQueue = QueueConfiguration<QueueContext>(
     name: "alko",
     policy: .init(isSequential: true),
     handler: { ctx, message in

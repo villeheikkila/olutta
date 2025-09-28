@@ -88,17 +88,17 @@ public enum QueueError: Error {
     case processingFailed(String)
 }
 
-public actor PGMQService<Context: QueueContextProtocol>: Service {
-    private let context: Context
+public actor PGMQService<QueueContext: QueueContextProtocol>: Service {
+    private let context: QueueContext
     private let logger: Logger
     private let poolConfig: SharedPoolConfig
-    private var queueHandlers: [String: QueueConfiguration<Context>]
+    private var queueHandlers: [String: QueueConfiguration<QueueContext>]
     private var isRunning = false
     private var activeJobs = 0
     private var activeJobsPerQueue: [String: Int] = [:]
 
     init(
-        context: Context,
+        context: QueueContext,
         logger: Logger,
         poolConfig: SharedPoolConfig = .init(),
     ) {
@@ -108,7 +108,7 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
         queueHandlers = [:]
     }
 
-    func registerQueue(_ registration: QueueConfiguration<Context>) {
+    func registerQueue(_ registration: QueueConfiguration<QueueContext>) {
         queueHandlers[registration.name] = registration
     }
 
@@ -134,7 +134,7 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
 
     private func processQueue(
         name queueName: String,
-        registration: QueueConfiguration<Context>,
+        registration: QueueConfiguration<QueueContext>,
     ) async throws {
         while isRunning || !Task.isCancelled {
             do {
@@ -194,7 +194,7 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
         _ message: PGMQMessage,
         queueName: String,
         policy: QueuePolicy,
-        handler: @escaping @Sendable (Context, PGMQMessage) async throws -> Void,
+        handler: @escaping @Sendable (QueueContext, PGMQMessage) async throws -> Void,
     ) async throws {
         incrementActiveJobs(queueName: queueName)
         defer { decrementActiveJobs(queueName: queueName) }

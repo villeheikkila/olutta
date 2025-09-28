@@ -57,41 +57,13 @@ struct Config {
         apnsTopic = try configReader.requiredString(forKey: "apple.apns.topic")
         let apnsToken = try configReader.requiredString(forKey: "apple.apns.token").decodeBase64()
         guard let apnsToken else {
-            fatalError("Invalid APNS token")
+            throw ConfigError.invalidAPNSToken
         }
         self.apnsToken = apnsToken
         jwtSecret = try configReader.requiredString(forKey: "jwt.secret")
     }
 }
 
-public extension Logger.Level {
-    init(from string: String) {
-        self = Logger.Level(rawValue: string.lowercased()) ?? .info
-    }
-}
-
-func decodeBase64(_ base64String: String) -> String? {
-    // Try direct decode first
-    if let data = Data(base64Encoded: base64String),
-       let result = String(data: data, encoding: .utf8)
-    {
-        return result
-    }
-
-    // Try with ignore unknown characters
-    if let data = Data(base64Encoded: base64String, options: .ignoreUnknownCharacters),
-       let result = String(data: data, encoding: .utf8)
-    {
-        return result
-    }
-
-    // Try removing quotes if present
-    let cleaned = base64String.replacingOccurrences(of: "\"", with: "")
-    if let data = Data(base64Encoded: cleaned),
-       let result = String(data: data, encoding: .utf8)
-    {
-        return result
-    }
-
-    return nil
+enum ConfigError: Error {
+    case invalidAPNSToken
 }

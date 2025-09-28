@@ -17,9 +17,9 @@ import ServiceLifecycle
 
 typealias AppRequestContext = BasicAuthRequestContext<UserIdentity>
 
-func buildApplication(config: Config) async throws -> some ApplicationProtocol {
+func makeServer(config: Config) async throws -> some ApplicationProtocol {
     // logger
-    let logger = buildLogger(
+    let logger = makeLogger(
         label: config.serverName,
         telegramApiKey: config.telegramApiKey,
         telegramErrorChatId: config.telegramErrorChatId,
@@ -68,7 +68,7 @@ func buildApplication(config: Config) async throws -> some ApplicationProtocol {
     )
     // queue
     let pgmqClient = PGMQClient(client: postgresClient)
-    let queueContext = Context(pgmq: pgmqClient, pg: postgresClient, openRouter: openRouter, logger: logger, alkoService: alkoService, untappdService: untappdService, config: config)
+    let queueContext = QueueContext(pgmq: pgmqClient, pg: postgresClient, openRouter: openRouter, logger: logger, alkoService: alkoService, untappdService: untappdService, config: config)
     let queueService = PGMQService(context: queueContext, logger: logger, poolConfig: .init(
         maxConcurrentJobs: 3,
         pollInterval: 1,
@@ -87,7 +87,7 @@ func buildApplication(config: Config) async throws -> some ApplicationProtocol {
     // router
     let jwtKeyCollection = JWTKeyCollection()
     await jwtKeyCollection.add(hmac: HMACKey(stringLiteral: config.jwtSecret), digestAlgorithm: .sha256, kid: JWKIdentifier(stringLiteral: config.serverName.lowercased()))
-    let router = buildRouter(pg: postgresClient, persist: persist, jwtKeyCollection: jwtKeyCollection, requestSignatureSalt: config.requestSignatureSalt)
+    let router = makeRouter(pg: postgresClient, persist: persist, jwtKeyCollection: jwtKeyCollection, requestSignatureSalt: config.requestSignatureSalt)
     // app
     logger.info("starting \(config.serverName) server on port \(config.host):\(config.port)...")
     var app = Application(
@@ -103,4 +103,14 @@ func buildApplication(config: Config) async throws -> some ApplicationProtocol {
         try await migrations.apply(client: postgresClient, logger: logger, dryRun: false)
     }
     return app
+}
+
+struct QueueContext: QueueContextProtocol {
+    let pgmq: PGMQ
+    let pg: PostgresClient
+    let openRouter: OpenAI
+    let logger: Logger
+    let alkoService: AlkoService
+    let untappdService: UntappdService
+    let config: Config
 }
