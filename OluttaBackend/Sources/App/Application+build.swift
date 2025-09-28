@@ -26,7 +26,6 @@ func buildApplication(
         telegramErrorChatId: config.telegramErrorChatId,
         logLevel: config.logLevel,
     )
-    logger.info("starting \(config.serverName) server on port \(config.host):\(config.port)...")
     let jwtKeyCollection = JWTKeyCollection()
     await jwtKeyCollection.add(hmac: HMACKey(stringLiteral: config.jwtSecret), digestAlgorithm: .sha256, kid: JWKIdentifier(stringLiteral: config.serverName.lowercased()))
     let postgresClient = PostgresClient(
@@ -56,26 +55,20 @@ func buildApplication(
     ))
     await queueService.registerQueue(alkoQueue)
     await queueService.registerQueue(untappdQueue)
-//    let client = APNSClient(
-//        configuration: .init(
-//            authenticationMethod: .jwt(
-//                privateKey: try .init(pemRepresentation: privateKey),
-//                keyIdentifier: keyIdentifier,
-//                teamIdentifier: teamIdentifier
-//            ),
-//            environment: .development
-//        ),
-//        eventLoopGroupProvider: .createNew,
-//        responseDecoder: JSONDecoder(),
-//        requestEncoder: JSONEncoder()
-//    )
+    let apnsService = try APNSService(
+        privateKey: config.apnsToken,
+        keyIdentifier: config.appleKeyId,
+        teamIdentifier: config.appleTeamId,
+        environment: .development,
+    )
+    logger.info("starting \(config.serverName) server on port \(config.host):\(config.port)...")
     var app = Application(
         router: router,
         configuration: .init(
             address: .hostname(config.host, port: config.port),
             serverName: config.serverName,
         ),
-        services: [postgresClient, postgresPersist, redis, queueService],
+        services: [postgresClient, postgresPersist, redis, queueService, apnsService],
         logger: logger,
     )
     app.beforeServerStarts {
