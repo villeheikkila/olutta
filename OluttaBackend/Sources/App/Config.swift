@@ -26,6 +26,7 @@ struct Config {
     let appleTeamId: String
     let appleKeyId: String
     let apnsToken: String
+    let apnsTopic: String
     let jwtSecret: String
     let logLevel: Logger.Level
 
@@ -53,6 +54,7 @@ struct Config {
         openrouterApiKey = try configReader.requiredString(forKey: "openrouter.api.key")
         appleTeamId = try configReader.requiredString(forKey: "apple.team.id")
         appleKeyId = try configReader.requiredString(forKey: "apple.key.id")
+        apnsTopic = try configReader.requiredString(forKey: "apple.apns.topic")
         let apnsToken = try configReader.requiredString(forKey: "apple.apns.token").decodeBase64()
         guard let apnsToken else {
             fatalError("Invalid APNS token")

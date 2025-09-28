@@ -29,6 +29,16 @@ struct DeviceRepository: Sendable {
         throw RepositoryError.noData
     }
 
+    func removePushNotificationToken(
+        _ connection: PostgresConnection,
+        pushNotificationToken: String,
+    ) async throws {
+        try await connection.query("""
+            DELETE FROM public.device
+            WHERE push_notification_token = \(pushNotificationToken)
+        """, logger: logger)
+    }
+
     func getDevice(
         _ connection: PostgresConnection,
         by id: UUID,
