@@ -2,9 +2,7 @@ import Foundation
 import PostgresNIO
 
 struct AlkoRepository: Sendable {
-    let logger: Logger
-
-    func getStores(_ connection: PostgresConnection) async throws -> [AlkoStoreEntity] {
+    func getStores(_ connection: PostgresConnection, logger: Logger) async throws -> [AlkoStoreEntity] {
         let stream = try await connection.query(
             """
             SELECT "id", "store_external_id", "name", "address", "city", 
@@ -35,6 +33,7 @@ struct AlkoRepository: Sendable {
 
     func getProductsByStoreId(
         _ connection: PostgresConnection,
+        logger: Logger,
         id: UUID,
     ) async throws -> [CombinedProductEntity] {
         let result = try await connection.query(
@@ -129,8 +128,6 @@ struct AlkoRepository: Sendable {
                 description: description,
                 certificateId: certificateId,
             )
-
-            // Create UntappdProductEntity only if we have a valid untappdId
             let untappdProduct: UntappdProductEntity? = if let untappdId,
                                                            let untappdExternalId,
                                                            let untappdName,
@@ -197,8 +194,6 @@ struct AlkoRepository: Sendable {
             } else {
                 nil
             }
-
-            // Create MappingInfo only if we have a valid mapping
             let mappingInfo: MappingInfo? = if let confidenceScore,
                                                let isVerified,
                                                let reasoning
@@ -211,7 +206,6 @@ struct AlkoRepository: Sendable {
             } else {
                 nil
             }
-
             products.append(.init(
                 alkoProduct: alkoProduct,
                 untappdProduct: untappdProduct,
@@ -224,6 +218,7 @@ struct AlkoRepository: Sendable {
 
     func getProductById(
         _ connection: PostgresConnection,
+        logger: Logger,
         id: UUID,
     ) async throws -> AlkoProductEntity {
         let result = try await connection.query(
@@ -274,6 +269,7 @@ struct AlkoRepository: Sendable {
 
     func upsertAlkoProducts(
         _ connection: PostgresConnection,
+        logger: Logger,
         products: [AlkoSearchProductResponse],
     ) async throws -> [(id: UUID, isNewRecord: Bool)] {
         let columns = [
@@ -356,6 +352,7 @@ struct AlkoRepository: Sendable {
 
     func markUnavailableAlkoProducts(
         _ connection: PostgresConnection,
+        logger: Logger,
         excludingProductIds: [UUID],
     ) async throws -> Int {
         var bindings: PostgresBindings = .init()
@@ -383,7 +380,7 @@ struct AlkoRepository: Sendable {
         return affectedCount
     }
 
-    func upsertStores(_ connection: PostgresConnection, stores: [AlkoStoreResponse]) async throws -> [(id: String, isNewRecord: Bool)] {
+    func upsertStores(_ connection: PostgresConnection, logger: Logger, stores: [AlkoStoreResponse]) async throws -> [(id: String, isNewRecord: Bool)] {
         let columns = [
             "store_external_id",
             "name",
@@ -432,7 +429,7 @@ struct AlkoRepository: Sendable {
         return storeResults
     }
 
-    func upsertWebstoreInventory(_ connection: PostgresConnection, productId: UUID, availabilities: [AlkoWebAvailabilityResponse]) async throws -> [(id: UUID, isNewRecord: Bool)] {
+    func upsertWebstoreInventory(_ connection: PostgresConnection, logger: Logger, productId: UUID, availabilities: [AlkoWebAvailabilityResponse]) async throws -> [(id: UUID, isNewRecord: Bool)] {
         let columns = [
             "product_id",
             "status_code",
@@ -489,6 +486,7 @@ struct AlkoRepository: Sendable {
 
     func upsertStoreInventory(
         _ connection: PostgresConnection,
+        logger: Logger,
         productId: UUID,
         availabilities: [(storeId: UUID, count: String?)],
     ) async throws -> [(id: (UUID, UUID), isNewRecord: Bool)] {
@@ -534,6 +532,7 @@ struct AlkoRepository: Sendable {
 
     func linkAlkoProductToUntappdBeer(
         _ connection: PostgresConnection,
+        logger: Logger,
         alkoProductId: UUID,
         untappdId: UUID,
     ) async throws {

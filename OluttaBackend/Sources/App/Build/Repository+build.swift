@@ -6,7 +6,7 @@ struct Repositories {
     let untappd: UntappdRepository
 
     init(logger: Logger) {
-        alko = .init(logger: logger)
-        untappd = .init(logger: logger)
+        alko = .init()
+        untappd = .init()
     }
 }

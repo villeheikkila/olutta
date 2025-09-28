@@ -2,11 +2,10 @@ import Foundation
 import PostgresNIO
 
 struct UntappdRepository: Sendable {
-    let logger: Logger
-
     @discardableResult
     func upsertBeer(
         _ connection: PostgresConnection,
+        logger: Logger,
         beer: UntappdBeerResponse.Beer,
     ) async throws -> UUID {
         let result = try await connection.query("""
@@ -74,6 +73,7 @@ struct UntappdRepository: Sendable {
     @discardableResult
     func createProductMapping(
         _ connection: PostgresConnection,
+        logger: Logger,
         alkoProductId: UUID,
         untappdProductId: UUID,
         confidenceScore: Int,

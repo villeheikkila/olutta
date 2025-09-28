@@ -30,7 +30,7 @@ extension AppController {
             return try Response.makeJSONResponse(body: cachedValue)
         }
         let stores = try await pg.withTransaction { tx in
-            try await alkoRepository.getStores(tx)
+            try await alkoRepository.getStores(tx, logger: context.logger)
         }
         let body: [StoreEntity] = stores.map { store in
             StoreEntity(
@@ -53,7 +53,7 @@ extension AppController {
     func productsByStoreId(request _: Request, context: AppRequestContext) async throws -> Response {
         guard let id = context.parameters.get("id", as: UUID.self) else { throw HTTPError(.badRequest) }
         let products = try await pg.withTransaction { tx in
-            try await alkoRepository.getProductsByStoreId(tx, id: id)
+            try await alkoRepository.getProductsByStoreId(tx, logger: context.logger, id: id)
         }
         let responseBody = products.map {
             ProductEntity(
