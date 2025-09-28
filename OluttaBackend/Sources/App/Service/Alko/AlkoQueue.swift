@@ -9,7 +9,7 @@ let alkoQueue = QueueConfiguration<Context>(
         case "v1:refresh-stores":
             ctx.logger.info("refreshing alko stores")
             try await ctx.pg.withTransaction { tx in
-                let stores = try await ctx.services.alko.getStores()
+                let stores = try await ctx.alkoService.getStores()
                 let result = try await AlkoRepository.upsertStores(tx, logger: ctx.logger, stores: stores)
                 let totalStores = result.count
                 let newStores = result.count(where: \.isNewRecord)
@@ -18,7 +18,7 @@ let alkoQueue = QueueConfiguration<Context>(
         case "v1:refresh-beers":
             ctx.logger.info("refreshing beers")
             try await ctx.pg.withTransaction { tx in
-                let products = try await ctx.services.alko.getAllBeers()
+                let products = try await ctx.alkoService.getAllBeers()
                 let result = try await AlkoRepository.upsertAlkoProducts(tx, logger: ctx.logger, products: products)
                 let noLongerAvailable = if result.count != 0 {
                     try await AlkoRepository.markUnavailableAlkoProducts(tx, logger: ctx.logger, excludingProductIds: result.map(\.id))
@@ -36,8 +36,8 @@ let alkoQueue = QueueConfiguration<Context>(
             try await ctx.pg.withTransaction { tx in
                 let product = try await AlkoRepository.getProductById(tx, logger: ctx.logger, id: id)
                 let stores = try await AlkoRepository.getStores(tx, logger: ctx.logger)
-                let storeAvailability = try await ctx.services.alko.getAvailability(productId: product.productExternalId)
-                let webstoreAvailability = try await ctx.services.alko.getWebstoreAvailability(id: product.productExternalId)
+                let storeAvailability = try await ctx.alkoService.getAvailability(productId: product.productExternalId)
+                let webstoreAvailability = try await ctx.alkoService.getWebstoreAvailability(id: product.productExternalId)
                 let storeAvailabilityResult = try await AlkoRepository.upsertWebstoreInventory(tx, logger: ctx.logger, productId: id, availabilities: webstoreAvailability)
                 let availabilities: [(storeId: UUID, count: String?)] = storeAvailability.compactMap { availability in
                     let store = stores.first { store in store.alkoStoreId == availability.id }

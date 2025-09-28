@@ -25,7 +25,7 @@ func buildApplication(config: Config) async throws -> some ApplicationProtocol {
         telegramErrorChatId: config.telegramErrorChatId,
         logLevel: config.logLevel,
     )
-    // database
+    // postgres
     let postgresClient = PostgresClient(
         configuration: .init(
             host: config.pgHost,
@@ -43,31 +43,51 @@ func buildApplication(config: Config) async throws -> some ApplicationProtocol {
     }
     let postgresPersist = await PostgresPersistDriver(client: postgresClient, migrations: migrations, logger: logger)
     let pgmqClient = PGMQClient(client: postgresClient)
+    // redis
     let redis = try RedisConnectionPoolService(
         .init(hostname: config.redisHost, port: config.redisPort),
         logger: logger,
     )
-    // context
-    let context = try await buildContext(logger: logger, config: config, pgmq: pgmqClient, pg: postgresClient, redis: redis)
+    let persist = RedisPersistDriver(redisConnectionPoolService: redis)
+    // http client
+    let httpClient = HTTPClient.shared
     // services
-    let queueService = PGMQService(context: context, logger: logger, poolConfig: .init(
+    let openRouter = OpenAI(configuration: .init(token: config.openrouterApiKey, host: "openrouter.ai", basePath: "/api/v1", parsingOptions: .fillRequiredFieldIfKeyNotFound))
+    let alkoService = AlkoService(
+        logger: logger,
+        httpClient: httpClient,
+        apiKey: config.alkoApiKey,
+        baseUrl: config.alkoBaseUrl,
+        agent: config.alkoAgent,
+    )
+    let untappdService = UntappdService(
+        logger: logger,
+        httpClient: httpClient,
+        appName: config.serverName,
+        clientId: config.untappdClientId,
+        clientSecret: config.untappdClientSecret,
+    )
+    // queue
+    let queueContext = Context(pgmq: pgmqClient, pg: postgresClient, openRouter: openRouter, logger: logger, alkoService: alkoService, untappdService: untappdService, config: config)
+    let queueService = PGMQService(context: queueContext, logger: logger, poolConfig: .init(
         maxConcurrentJobs: 3,
         pollInterval: 1,
     ))
     await queueService.registerQueue(alkoQueue)
     await queueService.registerQueue(untappdQueue)
+    // apns
     let apnsService = try APNSService(
         privateKey: config.apnsToken,
         keyIdentifier: config.appleKeyId,
         teamIdentifier: config.appleTeamId,
         environment: .development,
         apnsTopic: config.apnsTopic,
-        pg: context.pg,
+        pg: postgresClient,
     )
     // router
     let jwtKeyCollection = JWTKeyCollection()
     await jwtKeyCollection.add(hmac: HMACKey(stringLiteral: config.jwtSecret), digestAlgorithm: .sha256, kid: JWKIdentifier(stringLiteral: config.serverName.lowercased()))
-    let router = buildRouter(ctx: context, jwtKeyCollection: jwtKeyCollection)
+    let router = buildRouter(pg: postgresClient, persist: persist, jwtKeyCollection: jwtKeyCollection, requestSignatureSalt: config.requestSignatureSalt)
     // app
     logger.info("starting \(config.serverName) server on port \(config.host):\(config.port)...")
     var app = Application(

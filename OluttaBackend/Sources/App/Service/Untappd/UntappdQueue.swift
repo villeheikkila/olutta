@@ -11,7 +11,7 @@ let untappdQueue = QueueConfiguration<Context>(
         case "v1:upsert-beer-by-id":
             guard let typeValue = message.message["id"], let id = typeValue.intValue else { throw QueueError.invalidPayload }
             try await ctx.pg.withTransaction { tx in
-                let beer = try await ctx.services.untappd.getBeerMetadata(bid: id)
+                let beer = try await ctx.untappdService.getBeerMetadata(bid: id)
                 try await UntappdRepository.upsertBeer(tx, logger: ctx.logger, beer: beer.response.beer)
                 ctx.logger.info("updated untappd beer record", metadata: ["id": .init(stringLiteral: id.description)])
             }
@@ -20,7 +20,7 @@ let untappdQueue = QueueConfiguration<Context>(
                 throw QueueError.invalidPayload
             }
             try await ctx.pg.withTransaction { tx in
-                let untappdLLM = UntappdLLM(openRouter: ctx.openRouter, untappdService: ctx.services.untappd, logger: ctx.logger)
+                let untappdLLM = UntappdLLM(openRouter: ctx.openRouter, untappdService: ctx.untappdService, logger: ctx.logger)
                 let alkoProduct = try await AlkoRepository.getProductById(tx, logger: ctx.logger, id: id)
                 let (beer, confidenceScore, reasoning) = try await untappdLLM.searchAndMatch(alkoProduct: alkoProduct)
                 let untappdProductId = try await UntappdRepository.upsertBeer(tx, logger: ctx.logger, beer: beer)
