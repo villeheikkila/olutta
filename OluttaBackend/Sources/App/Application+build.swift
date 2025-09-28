@@ -17,17 +17,15 @@ import ServiceLifecycle
 
 typealias AppRequestContext = BasicAuthRequestContext<Device>
 
-func buildApplication(
-    config: Config,
-) async throws -> some ApplicationProtocol {
+func buildApplication(config: Config) async throws -> some ApplicationProtocol {
+    // logger
     let logger = buildLogger(
         label: config.serverName,
         telegramApiKey: config.telegramApiKey,
         telegramErrorChatId: config.telegramErrorChatId,
         logLevel: config.logLevel,
     )
-    let jwtKeyCollection = JWTKeyCollection()
-    await jwtKeyCollection.add(hmac: HMACKey(stringLiteral: config.jwtSecret), digestAlgorithm: .sha256, kid: JWKIdentifier(stringLiteral: config.serverName.lowercased()))
+    // database
     let postgresClient = PostgresClient(
         configuration: .init(
             host: config.pgHost,
@@ -47,8 +45,9 @@ func buildApplication(
         .init(hostname: config.redisHost, port: config.redisPort),
         logger: logger,
     )
+    // context
     let context = try await buildContext(logger: logger, config: config, pgmq: pgmqClient, pg: postgresClient, redis: redis)
-    let router = buildRouter(ctx: context, jwtKeyCollection: jwtKeyCollection)
+    // services
     let queueService = PGMQService(context: context, logger: logger, poolConfig: .init(
         maxConcurrentJobs: 3,
         pollInterval: 1,
@@ -61,6 +60,11 @@ func buildApplication(
         teamIdentifier: config.appleTeamId,
         environment: .development,
     )
+    // router
+    let jwtKeyCollection = JWTKeyCollection()
+    await jwtKeyCollection.add(hmac: HMACKey(stringLiteral: config.jwtSecret), digestAlgorithm: .sha256, kid: JWKIdentifier(stringLiteral: config.serverName.lowercased()))
+    let router = buildRouter(ctx: context, jwtKeyCollection: jwtKeyCollection)
+    // app
     logger.info("starting \(config.serverName) server on port \(config.host):\(config.port)...")
     var app = Application(
         router: router,
@@ -75,10 +79,4 @@ func buildApplication(
         try await migrations.apply(client: postgresClient, logger: logger, dryRun: false)
     }
     return app
-}
-
-func addDatabaseMigrations(to migrations: DatabaseMigrations) async {
-    await migrations.add(AdoptHummingbirdMigrations())
-    await migrations.add(ScheduleAvailabilityRefreshMigration())
-    await migrations.add(AddDeviceTableMigration())
 }
