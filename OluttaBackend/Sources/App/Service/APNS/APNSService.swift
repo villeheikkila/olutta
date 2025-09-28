@@ -8,7 +8,6 @@ import ServiceLifecycle
 
 struct APNSService: Service, Sendable {
     let apnsClient: APNSClient<JSONDecoder, JSONEncoder>
-    let deviceRepository: DeviceRepository
     let pg: PostgresClient
     let apnsTopic: String
 
@@ -19,7 +18,6 @@ struct APNSService: Service, Sendable {
         environment: APNSEnvironment,
         apnsTopic: String,
         pg: PostgresClient,
-        deviceRepository: DeviceRepository,
     ) throws {
         apnsClient = try APNSClient(
             configuration: .init(
@@ -36,7 +34,6 @@ struct APNSService: Service, Sendable {
         )
         self.apnsTopic = apnsTopic
         self.pg = pg
-        self.deviceRepository = deviceRepository
     }
 
     func sendPushNotifications(pushNotificationToken: String, title: APNSAlertNotificationContent.StringValue?, subtitle: APNSAlertNotificationContent.StringValue?, body: APNSAlertNotificationContent.StringValue?) async throws {
@@ -46,8 +43,8 @@ struct APNSService: Service, Sendable {
                 deviceToken: pushNotificationToken,
             )
         } catch let error as APNSCore.APNSError where error.reason == .badDeviceToken {
-            try await pg.withTransaction { tx in
-                try await deviceRepository.removePushNotificationToken(tx, pushNotificationToken: pushNotificationToken)
+            try await pg.withTransaction { _ in
+                // try await deviceReDpository.removePushNotificationToken(tx, pushNotificationToken: pushNotificationToken)
             }
         }
     }

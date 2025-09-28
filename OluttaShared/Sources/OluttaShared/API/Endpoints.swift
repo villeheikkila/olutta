@@ -7,6 +7,8 @@ public enum APIEndpoint {
     case anonymous
     case currentUser
     case user
+    case refresh
+    case refreshDevice
 
     public var path: String {
         switch self {
@@ -22,23 +24,31 @@ public enum APIEndpoint {
             "/v1/user"
         case let .subscribeToStore(id):
             "/v1/stores/\(id.uuidString.lowercased())/subscribe"
+        case .refresh:
+            "/v1/auth/refresh"
+        case .refreshDevice:
+            "/v1/user/device"
         }
     }
 
     public var pathConfig: String {
         switch self {
         case .stores:
-            "/v1/stores"
+            path
         case .productsByStoreId:
             "/v1/stores/:id/products"
         case .anonymous:
-            "/v1/auth/anonymous"
+            path
         case .currentUser:
-            "/v1/users/me"
+            path
         case .user:
-            "/v1/user"
+            path
         case .subscribeToStore:
             "/v1/stores/:id/subscribe"
+        case .refresh:
+            path
+        case .refreshDevice:
+            path
         }
     }
 }

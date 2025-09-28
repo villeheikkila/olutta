@@ -141,11 +141,11 @@ final class HTTPClient {
 
     func post<T: Decodable>(
         path: String,
-        body: some Encodable,
+        body: (some Encodable)? = nil,
         queryItems: [URLQueryItem]? = nil,
         headers: [HTTPField] = [],
     ) async throws -> T {
-        let bodyData = try encoder.encode(body)
+        let bodyData: Data? = if let body { try encoder.encode(body) } else { nil }
         let (data, response) = try await request(
             method: .post,
             path: path,
@@ -176,6 +176,28 @@ final class HTTPClient {
             queryItems: queryItems,
             headers: headers,
             body: bodyData,
+        )
+        guard (200 ... 299).contains(response.status.code) else {
+            throw HTTPClientError.httpError(code: response.status.code, data: data)
+        }
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw HTTPClientError.decodingFailed(error)
+        }
+    }
+
+    func delete<T: Decodable>(
+        path: String,
+        queryItems: [URLQueryItem]? = nil,
+        headers: [HTTPField] = [],
+    ) async throws -> T {
+        let (data, response) = try await request(
+            method: .delete,
+            path: path,
+            queryItems: queryItems,
+            headers: headers,
+            body: nil,
         )
         guard (200 ... 299).contains(response.status.code) else {
             throw HTTPClientError.httpError(code: response.status.code, data: data)
@@ -240,6 +262,18 @@ extension HTTPClient {
         try await patch(
             path: endpoint.path,
             body: body,
+            queryItems: queryItems,
+            headers: headers,
+        )
+    }
+
+    func delete<T: Decodable>(
+        endpoint: APIEndpoint,
+        queryItems: [URLQueryItem]? = nil,
+        headers: [HTTPField] = [],
+    ) async throws -> T {
+        try await delete(
+            path: endpoint.path,
             queryItems: queryItems,
             headers: headers,
         )

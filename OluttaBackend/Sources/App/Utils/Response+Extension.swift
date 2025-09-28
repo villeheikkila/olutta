@@ -27,7 +27,11 @@ extension Response {
         status: HTTPResponse.Status = .ok,
         headers: HTTPFields = [:],
     ) throws -> Response {
-        let defaultHeaders: HTTPFields = [:]
+        let data = try JSONEncoder().encode(Empty())
+        let defaultHeaders: HTTPFields = [
+            .contentType: "application/json; charset=utf-8",
+            .contentLength: "\(data.count)",
+        ]
         let responseHeaders = defaultHeaders + headers
         return Response(
             status: status,
@@ -35,3 +39,5 @@ extension Response {
         )
     }
 }
+
+struct Empty: Encodable {}

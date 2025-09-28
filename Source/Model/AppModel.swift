@@ -36,6 +36,7 @@ class AppModel {
     var productsByStore: [UUID: [ProductEntity]] = [:]
     var isAuthenticated: Bool = false
     var pushNotificationToken: String?
+    var subscribedStoreIds = [UUID]()
     var selectedStore: StoreEntity? {
         didSet {
             guard let selectedStore else { return }
@@ -141,6 +142,7 @@ class AppModel {
             let response: AnonymousAuthResponse = try await httpClient.post(endpoint: .anonymous, body: AnonymousAuthRequest(deviceId: UUID(uuidString: deviceId ?? UUID().uuidString) ?? UUID(), pushNotificationToken: pushNotificationToken, isDevelopmentDevice: true, platform: .ios))
             try keychain.set(response.token.data(using: .utf8)!, forKey: "token")
             try keychain.set(response.deviceId.uuidString.data(using: .utf8)!, forKey: "device-id")
+            subscribedStoreIds = response.subscribedStoreIds
             httpClient = httpClient.copyWith(defaultHeaders: [.init(name: .authorization, value: "Bearer \(response.token)")])
             isAuthenticated = true
             status = .loading
@@ -153,7 +155,31 @@ class AppModel {
     func refreshPushNotificationToken(pushNotificationToken: String) {
         self.pushNotificationToken = pushNotificationToken
     }
+
+    func toggleSubscription() async throws {
+        guard let selectedStore else { return }
+        if subscribedStoreIds.contains(selectedStore.id) {
+            print("MOI")
+            do {
+                let v: Empty = try await httpClient.delete(endpoint: .subscribeToStore(selectedStore.id))
+                subscribedStoreIds = subscribedStoreIds.filter { $0 != selectedStore.id }
+            } catch {
+                logger.error("failed to unsubscribe from store: \(error)")
+            }
+            return
+        }
+        print("HEI")
+        do {
+            let v: Empty = try await httpClient.post(endpoint: .subscribeToStore(selectedStore.id), body: Empty())
+            subscribedStoreIds.append(selectedStore.id)
+            print(subscribedStoreIds)
+        } catch {
+            logger.error("failed to subscribe to store: \(error)")
+        }
+    }
 }
+
+struct Empty: Codable {}
 
 struct StoreAnnotation: Identifiable, CoordinateIdentifiable, Hashable {
     let id: String

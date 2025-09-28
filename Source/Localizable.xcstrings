@@ -96,6 +96,12 @@
         }
       }
     },
+    "Subscribe" : {
+
+    },
+    "Unsubscribe" : {
+
+    },
     "Untappd" : {
       "extractionState" : "manual",
       "localizations" : {

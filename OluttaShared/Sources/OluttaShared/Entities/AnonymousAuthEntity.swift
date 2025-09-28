@@ -19,15 +19,41 @@ public struct AnonymousAuthRequest: Codable, Sendable {
 }
 
 public struct AnonymousAuthResponse: Codable, Hashable, Sendable {
-    public init(deviceId: UUID, token: String, expiresAt: Date, subscribedStoreIds: [UUID]) {
-        self.deviceId = deviceId
-        self.token = token
-        self.expiresAt = expiresAt
-        self.subscribedStoreIds = subscribedStoreIds
+    public init(refreshToken: String, refreshTokenExpiresAt: Date, accessToken: String, accessTokenExpiresAt: Date) {
+        self.refreshToken = refreshToken
+        self.accessToken = accessToken
+        self.refreshTokenExpiresAt = refreshTokenExpiresAt
+        self.accessTokenExpiresAt = accessTokenExpiresAt
     }
 
-    public let deviceId: UUID
+    public let refreshToken: String
+    public let accessToken: String
+    public let refreshTokenExpiresAt: Date
+    public let accessTokenExpiresAt: Date
+}
+
+public struct AccessTokenRefreshResponse: Codable, Hashable, Sendable {
+    public init(accessToken: String, accessTokenExpiresAt: Date) {
+        self.accessToken = accessToken
+        self.accessTokenExpiresAt = accessTokenExpiresAt
+    }
+
+    public let accessToken: String
+    public let accessTokenExpiresAt: Date
+}
+
+public struct UserResponse: Codable, Hashable, Sendable {
     public let subscribedStoreIds: [UUID]
-    public let token: String
-    public let expiresAt: Date
+
+    public init(subscribedStoreIds: [UUID]) {
+        self.subscribedStoreIds = subscribedStoreIds
+    }
+}
+
+public struct RefreshAccessTokenRequest: Codable, Sendable {
+    public let refreshToken: String
+
+    public init(refreshToken: String) {
+        self.refreshToken = refreshToken
+    }
 }

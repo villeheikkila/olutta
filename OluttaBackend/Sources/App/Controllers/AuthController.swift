@@ -11,50 +11,93 @@ struct AuthController {
     let logger: Logger
     let persist: RedisPersistDriver
     let jwtKeyCollection: JWTKeyCollection
-    let deviceRepository: DeviceRepository
 
     var endpoints: RouteCollection<AppRequestContext> {
         RouteCollection(context: AppRequestContext.self)
-            .post(.anonymous, use: anonymous)
-    }
-}
-
-struct AnonymousUserPayload: JWTPayload {
-    let sub: UUID
-    let deviceId: UUID
-    let tokenId: UUID
-    let iat: Date
-    let exp: Date
-
-    func verify(using _: some JWTAlgorithm) throws {
-        try ExpirationClaim(value: exp).verifyNotExpired()
+            .post(.refresh, use: refresh)
+            .post(.anonymous, use: createAnonymousUser)
     }
 }
 
 extension AuthController {
-    func anonymous(request: Request, context: AppRequestContext) async throws -> Response {
+    func refresh(request: Request, context: AppRequestContext) async throws -> Response {
+        let refreshTokenRequest = try await request.decode(as: RefreshAccessTokenRequest.self, context: context)
+        // verify payload
+        let payload: AccessTokenPayload
+        do {
+            payload = try await jwtKeyCollection.verify(refreshTokenRequest.refreshToken, as: AccessTokenPayload.self)
+        } catch {
+            context.logger.warning("invalid jwt token: \(error)")
+            throw HTTPError(.unauthorized)
+        }
+        let refreshTokenId = payload.sub
+        return try await pg.withTransaction { tx in
+            // check that refresh token has not been revoked
+            let device = try await DB.getUserDeviceByToken(connection: tx, logger: logger, tokenId: refreshTokenId)
+            guard let device else {
+                context.logger.warning("attempt to refresh access token without corresponding row in user devices")
+                throw HTTPError(.unauthorized)
+            }
+            if device.revokedAt != nil {
+                context.logger.warning("attempt to refresh access token with revoked refresh token")
+                throw HTTPError(.unauthorized)
+            }
+            // create new access token
+            let accessTokenId = UUID()
+            let payload = AccessTokenPayload(
+                sub: accessTokenId,
+                deviceId: device.deviceId,
+                userId: device.userId,
+                refreshTokenId: refreshTokenId,
+                iat: Date(),
+                // 15 minutes
+                exp: Date().addingTimeInterval(15 * 60),
+            )
+            let accessToken = try await jwtKeyCollection.sign(payload)
+            // response
+            let body = AccessTokenRefreshResponse(
+                accessToken: accessToken,
+                accessTokenExpiresAt: payload.exp,
+            )
+            return try Response.makeJSONResponse(body: body)
+        }
+    }
+
+    func createAnonymousUser(request: Request, context: AppRequestContext) async throws -> Response {
         let authRequest = try await request.decode(as: AnonymousAuthRequest.self, context: context)
         return try await pg.withTransaction { tx in
-            let identity = context.identity
-            let tokenId = UUID()
-            let deviceId = identity?.deviceId ?? authRequest.deviceId
-            let (_, isNew, storeIds) = try await deviceRepository.upsertDevice(tx, device: .init(id: authRequest.deviceId, pushNotificationToken: authRequest.pushNotificationToken, isSandbox: authRequest.isDevelopmentDevice, tokenId: tokenId))
-            if isNew {
-                context.logger.info("new device id registered")
-            }
-            let payload = AnonymousUserPayload(
-                sub: tokenId,
-                deviceId: authRequest.deviceId,
-                tokenId: tokenId,
-                iat: Date(),
-                exp: Date().addingTimeInterval(90 * 24 * 3600),
+            let deviceId = authRequest.deviceId
+            let pushNotificationToken = authRequest.pushNotificationToken
+            let now = Date()
+            // create user
+            let userId = try await DB.createUser(connection: tx, logger: logger)
+            // store refresh token id
+            let refreshTokenExpiry = now.addingTimeInterval(356 * 24 * 60 * 60) // 1 year
+            let refreshTokenId = try await DB.createUserDevice(connection: tx, logger: logger, userId: userId, deviceId: deviceId, pushNotificationToken: pushNotificationToken, expiresAt: refreshTokenExpiry)
+            let refreshTokenPayload = RefreshTokenPayload(
+                sub: refreshTokenId,
+                iat: now,
+                exp: refreshTokenExpiry,
             )
-            let token = try await jwtKeyCollection.sign(payload)
-            let body = AnonymousAuthResponse(
+            let refreshToken = try await jwtKeyCollection.sign(refreshTokenPayload)
+            // access token
+            let accessTokenId = UUID()
+            let accessTokenExpiry = now.addingTimeInterval(15 * 60) // 15 minutes
+            let accessTokenPayload = AccessTokenPayload(
+                sub: accessTokenId,
                 deviceId: deviceId,
-                token: token,
-                expiresAt: payload.exp,
-                subscribedStoreIds: storeIds,
+                userId: userId,
+                refreshTokenId: refreshTokenId,
+                iat: now,
+                exp: accessTokenExpiry,
+            )
+            let accessToken = try await jwtKeyCollection.sign(accessTokenPayload)
+            // response
+            let body = AnonymousAuthResponse(
+                refreshToken: refreshToken,
+                refreshTokenExpiresAt: refreshTokenExpiry,
+                accessToken: accessToken,
+                accessTokenExpiresAt: accessTokenExpiry,
             )
             return try Response.makeJSONResponse(body: body)
         }

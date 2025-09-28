@@ -15,7 +15,7 @@ import PostgresNIO
 import RegexBuilder
 import ServiceLifecycle
 
-typealias AppRequestContext = BasicAuthRequestContext<Device>
+typealias AppRequestContext = BasicAuthRequestContext<UserIdentity>
 
 func buildApplication(config: Config) async throws -> some ApplicationProtocol {
     // logger
@@ -63,7 +63,6 @@ func buildApplication(config: Config) async throws -> some ApplicationProtocol {
         environment: .development,
         apnsTopic: config.apnsTopic,
         pg: context.pg,
-        deviceRepository: context.repositories.device,
     )
     // router
     let jwtKeyCollection = JWTKeyCollection()

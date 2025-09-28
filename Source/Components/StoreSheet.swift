@@ -23,6 +23,15 @@ struct StoreSheet: View {
                             }
                         },
                     )
+                    .toolbar {
+                        ToolbarItemGroup(placement: .topBarTrailing) {
+                            Button(appModel.subscribedStoreIds.contains(store.id) ? "Unsubscribe" : "Subscribe", action: {
+                                Task {
+                                    try await appModel.toggleSubscription()
+                                }
+                            })
+                        }
+                    }
                     .task(id: store.id) {
                         await appModel.getProductsByStoreId(id: store.id)
                     }

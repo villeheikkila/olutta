@@ -6,3 +6,12 @@ struct DeviceEntity: Codable {
     let isSandbox: Bool
     let tokenId: UUID
 }
+
+struct UserEntity: Codable {
+    let id: UUID
+    let subscriptions: [Subscription]
+
+    struct Subscription: Codable {
+        let storeId: UUID
+    }
+}

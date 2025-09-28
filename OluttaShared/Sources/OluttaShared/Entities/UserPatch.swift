@@ -1,11 +1,11 @@
-public struct UserPatchRequest: Codable, Sendable {
-    let pushNotificationToken: String
+public struct UpsertPushNotificationTokenRequest: Codable, Sendable {
+    public let pushNotificationToken: String
 
     public init(pushNotificationToken: String) {
         self.pushNotificationToken = pushNotificationToken
     }
 }
 
-public struct UserPatchResponse: Codable, Sendable {
+public struct UpsertPushNotificationTokenResponse: Codable, Sendable {
     public init() {}
 }

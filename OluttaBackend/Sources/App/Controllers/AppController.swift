@@ -11,15 +11,12 @@ struct AppController {
     let pg: PostgresClient
     let persist: RedisPersistDriver
     let alkoRepository: AlkoRepository
-    let deviceModel: DeviceModel
     let jwtKeyCollection: JWTKeyCollection
 
     var endpoints: RouteCollection<AppRequestContext> {
         RouteCollection(context: AppRequestContext.self)
             .add(middleware: JWTAuthenticator(jwtKeyCollection: jwtKeyCollection))
             .get(.stores, use: stores)
-            .get(.subscribeToStore(UUID()), use: subscribeToStore)
-            .delete(.subscribeToStore(UUID()), use: unsubscribeFromStore)
             .get(.productsByStoreId(UUID()), use: productsByStoreId)
     }
 }
@@ -64,27 +61,5 @@ extension AppController {
             )
         }
         return try Response.makeJSONResponse(body: responseBody)
-    }
-}
-
-extension AppController {
-    func subscribeToStore(request _: Request, context: AppRequestContext) async throws -> Response {
-        guard let id = context.parameters.get("id", as: UUID.self) else { throw HTTPError(.badRequest) }
-        guard let device = context.identity else {
-            throw HTTPError(.unauthorized)
-        }
-        try await deviceModel.subscribeToStore(deviceId: device.deviceId, storeId: id)
-        return try Response.makeOkResponse()
-    }
-}
-
-extension AppController {
-    func unsubscribeFromStore(request _: Request, context: AppRequestContext) async throws -> Response {
-        guard let id = context.parameters.get("id", as: UUID.self) else { throw HTTPError(.badRequest) }
-        guard let device = context.identity else {
-            throw HTTPError(.unauthorized)
-        }
-        try await deviceModel.unsubscribeFromStore(deviceId: device.deviceId, storeId: id)
-        return try Response.makeOkResponse()
     }
 }

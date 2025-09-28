@@ -5,7 +5,7 @@ import SwiftUI
 struct Entrypoint: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var appModel = AppModel(httpClient: .init(
-        baseURL: URL(string: "https://0642c83e6da0.ngrok-free.app")!,
+        baseURL: URL(string: "https://73259ff8b11b.ngrok-free.app")!,
         secretKey: "a1b2c3d4e5f6g7h8i9j0k",
     ), keychain: Keychain(service: Bundle.main.bundleIdentifier!))
 
