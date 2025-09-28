@@ -42,7 +42,6 @@ func buildApplication(config: Config) async throws -> some ApplicationProtocol {
         await migrations.add(migration)
     }
     let postgresPersist = await PostgresPersistDriver(client: postgresClient, migrations: migrations, logger: logger)
-    let pgmqClient = PGMQClient(client: postgresClient)
     // redis
     let redis = try RedisConnectionPoolService(
         .init(hostname: config.redisHost, port: config.redisPort),
@@ -68,6 +67,7 @@ func buildApplication(config: Config) async throws -> some ApplicationProtocol {
         clientSecret: config.untappdClientSecret,
     )
     // queue
+    let pgmqClient = PGMQClient(client: postgresClient)
     let queueContext = Context(pgmq: pgmqClient, pg: postgresClient, openRouter: openRouter, logger: logger, alkoService: alkoService, untappdService: untappdService, config: config)
     let queueService = PGMQService(context: queueContext, logger: logger, poolConfig: .init(
         maxConcurrentJobs: 3,
