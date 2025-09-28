@@ -38,7 +38,7 @@ extension AuthController {
             let identity = context.identity
             let tokenId = UUID()
             let deviceId = identity?.deviceId ?? authRequest.deviceId
-            let (_, isNew) = try await deviceRepository.upsertDevice(tx, device: .init(id: authRequest.deviceId, pushNotificationToken: authRequest.pushNotificationToken, isSandbox: authRequest.isDevelopmentDevice, tokenId: tokenId))
+            let (_, isNew, storeIds) = try await deviceRepository.upsertDevice(tx, device: .init(id: authRequest.deviceId, pushNotificationToken: authRequest.pushNotificationToken, isSandbox: authRequest.isDevelopmentDevice, tokenId: tokenId))
             if isNew {
                 context.logger.info("new device id registered")
             }
@@ -54,6 +54,7 @@ extension AuthController {
                 deviceId: deviceId,
                 token: token,
                 expiresAt: payload.exp,
+                subscribedStoreIds: storeIds,
             )
             return try Response.makeJSONResponse(body: body)
         }

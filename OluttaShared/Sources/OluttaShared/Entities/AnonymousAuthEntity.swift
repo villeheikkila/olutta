@@ -19,13 +19,15 @@ public struct AnonymousAuthRequest: Codable, Sendable {
 }
 
 public struct AnonymousAuthResponse: Codable, Hashable, Sendable {
-    public init(deviceId: UUID, token: String, expiresAt: Date) {
+    public init(deviceId: UUID, token: String, expiresAt: Date, subscribedStoreIds: [UUID]) {
         self.deviceId = deviceId
         self.token = token
         self.expiresAt = expiresAt
+        self.subscribedStoreIds = subscribedStoreIds
     }
 
     public let deviceId: UUID
+    public let subscribedStoreIds: [UUID]
     public let token: String
     public let expiresAt: Date
 }

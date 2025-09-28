@@ -21,3 +21,17 @@ extension Response {
         )
     }
 }
+
+extension Response {
+    static func makeOkResponse(
+        status: HTTPResponse.Status = .ok,
+        headers: HTTPFields = [:],
+    ) throws -> Response {
+        let defaultHeaders: HTTPFields = [:]
+        let responseHeaders = defaultHeaders + headers
+        return Response(
+            status: status,
+            headers: responseHeaders,
+        )
+    }
+}

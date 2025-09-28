@@ -38,7 +38,9 @@ func buildApplication(config: Config) async throws -> some ApplicationProtocol {
         backgroundLogger: logger,
     )
     let migrations = DatabaseMigrations()
-    await addDatabaseMigrations(to: migrations)
+    for migration in allMigrations {
+        await migrations.add(migration)
+    }
     let postgresPersist = await PostgresPersistDriver(client: postgresClient, migrations: migrations, logger: logger)
     let pgmqClient = PGMQClient(client: postgresClient)
     let redis = try RedisConnectionPoolService(
@@ -59,6 +61,9 @@ func buildApplication(config: Config) async throws -> some ApplicationProtocol {
         keyIdentifier: config.appleKeyId,
         teamIdentifier: config.appleTeamId,
         environment: .development,
+        apnsTopic: config.apnsTopic,
+        pg: context.pg,
+        deviceRepository: context.repositories.device,
     )
     // router
     let jwtKeyCollection = JWTKeyCollection()

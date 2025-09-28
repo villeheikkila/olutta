@@ -13,6 +13,6 @@ func buildRouter(ctx: Context, jwtKeyCollection: JWTKeyCollection) -> Router<App
         return .ok
     }
     router.addRoutes(AuthController(pg: ctx.pg, logger: ctx.logger, persist: ctx.persist, jwtKeyCollection: jwtKeyCollection, deviceRepository: ctx.repositories.device).endpoints)
-    router.addRoutes(AppController(pg: ctx.pg, persist: ctx.persist, alkoRepository: ctx.repositories.alko, jwtKeyCollection: jwtKeyCollection).endpoints)
+    router.addRoutes(AppController(pg: ctx.pg, persist: ctx.persist, alkoRepository: ctx.repositories.alko, deviceModel: DeviceModel(deviceRepository: ctx.repositories.device, pg: ctx.pg, pushNotificationSubscriptionRepository: PushNotificationSubscriptionRepository()), jwtKeyCollection: jwtKeyCollection).endpoints)
     return router
 }

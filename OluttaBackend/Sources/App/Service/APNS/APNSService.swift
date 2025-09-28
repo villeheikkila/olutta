@@ -39,10 +39,10 @@ struct APNSService: Service, Sendable {
         self.deviceRepository = deviceRepository
     }
 
-    func sendPushNotifications(pushNotificationToken: String, title: String, subtitle: String, body: String) async throws {
+    func sendPushNotifications(pushNotificationToken: String, title: APNSAlertNotificationContent.StringValue?, subtitle: APNSAlertNotificationContent.StringValue?, body: APNSAlertNotificationContent.StringValue?) async throws {
         do {
             try await apnsClient.sendAlertNotification(
-                .init(alert: .init(title: .raw(title), subtitle: .raw(subtitle), body: .raw(body)), expiration: .immediately, priority: .immediately, topic: apnsTopic, payload: EmptyPayload()),
+                .init(alert: .init(title: title, subtitle: subtitle, body: body), expiration: .immediately, priority: .immediately, topic: apnsTopic, payload: EmptyPayload()),
                 deviceToken: pushNotificationToken,
             )
         } catch let error as APNSCore.APNSError where error.reason == .badDeviceToken {

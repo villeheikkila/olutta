@@ -3,6 +3,7 @@ import Foundation
 public enum APIEndpoint {
     case stores
     case productsByStoreId(UUID)
+    case subscribeToStore(UUID)
     case anonymous
     case currentUser
     case user
@@ -19,6 +20,8 @@ public enum APIEndpoint {
             "/v1/users/me"
         case .user:
             "/v1/user"
+        case let .subscribeToStore(id):
+            "/v1/stores/\(id.uuidString.lowercased())/subscribe"
         }
     }
 
@@ -34,6 +37,8 @@ public enum APIEndpoint {
             "/v1/users/me"
         case .user:
             "/v1/user"
+        case .subscribeToStore:
+            "/v1/stores/:id/subscribe"
         }
     }
 }

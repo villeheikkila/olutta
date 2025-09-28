@@ -11,13 +11,15 @@ struct AppController {
     let pg: PostgresClient
     let persist: RedisPersistDriver
     let alkoRepository: AlkoRepository
+    let deviceModel: DeviceModel
     let jwtKeyCollection: JWTKeyCollection
 
     var endpoints: RouteCollection<AppRequestContext> {
         RouteCollection(context: AppRequestContext.self)
             .add(middleware: JWTAuthenticator(jwtKeyCollection: jwtKeyCollection))
-            .patch(.user, use: updateUser)
             .get(.stores, use: stores)
+            .get(.subscribeToStore(UUID()), use: subscribeToStore)
+            .delete(.subscribeToStore(UUID()), use: unsubscribeFromStore)
             .get(.productsByStoreId(UUID()), use: productsByStoreId)
     }
 }
@@ -66,12 +68,23 @@ extension AppController {
 }
 
 extension AppController {
-    func updateUser(request: Request, context: AppRequestContext) async throws -> Response {
-        let requestBody = try await request.decode(as: UserPatchRequest.self, context: context)
+    func subscribeToStore(request _: Request, context: AppRequestContext) async throws -> Response {
+        guard let id = context.parameters.get("id", as: UUID.self) else { throw HTTPError(.badRequest) }
         guard let device = context.identity else {
             throw HTTPError(.unauthorized)
         }
-        let responseBody = UserPatchResponse()
-        return try Response.makeJSONResponse(body: responseBody)
+        try await deviceModel.subscribeToStore(deviceId: device.deviceId, storeId: id)
+        return try Response.makeOkResponse()
+    }
+}
+
+extension AppController {
+    func unsubscribeFromStore(request _: Request, context: AppRequestContext) async throws -> Response {
+        guard let id = context.parameters.get("id", as: UUID.self) else { throw HTTPError(.badRequest) }
+        guard let device = context.identity else {
+            throw HTTPError(.unauthorized)
+        }
+        try await deviceModel.unsubscribeFromStore(deviceId: device.deviceId, storeId: id)
+        return try Response.makeOkResponse()
     }
 }

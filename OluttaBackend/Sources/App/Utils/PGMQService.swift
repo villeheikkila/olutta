@@ -136,19 +136,17 @@ public actor PGMQService<Context: QueueContextProtocol>: Service {
         name queueName: String,
         registration: QueueConfiguration<Context>,
     ) async throws {
-        while isRunning {
+        while isRunning || !Task.isCancelled {
             do {
                 let messages = try await context.pgmq.read(
                     queue: queueName,
                     vt: registration.policy.visibilityTimeout,
                     qty: registration.policy.batchSize,
                 )
-
                 guard !messages.isEmpty else {
                     try await Task.sleep(for: .seconds(poolConfig.pollInterval))
                     continue
                 }
-
                 if registration.policy.isSequential {
                     for message in messages {
                         try await processMessage(
