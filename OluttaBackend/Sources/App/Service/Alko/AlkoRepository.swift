@@ -1,8 +1,8 @@
 import Foundation
 import PostgresNIO
 
-struct AlkoRepository: Sendable {
-    func getStores(_ connection: PostgresConnection, logger: Logger) async throws -> [AlkoStoreEntity] {
+enum AlkoRepository {
+    static func getStores(_ connection: PostgresConnection, logger: Logger) async throws -> [AlkoStoreEntity] {
         let stream = try await connection.query(
             """
             SELECT "id", "store_external_id", "name", "address", "city", 
@@ -31,7 +31,7 @@ struct AlkoRepository: Sendable {
         return stores
     }
 
-    func getProductsByStoreId(
+    static func getProductsByStoreId(
         _ connection: PostgresConnection,
         logger: Logger,
         id: UUID,
@@ -216,7 +216,7 @@ struct AlkoRepository: Sendable {
         return products
     }
 
-    func getProductById(
+    static func getProductById(
         _ connection: PostgresConnection,
         logger: Logger,
         id: UUID,
@@ -267,7 +267,7 @@ struct AlkoRepository: Sendable {
         throw RepositoryError.recordNotFound
     }
 
-    func upsertAlkoProducts(
+    static func upsertAlkoProducts(
         _ connection: PostgresConnection,
         logger: Logger,
         products: [AlkoSearchProductResponse],
@@ -350,7 +350,7 @@ struct AlkoRepository: Sendable {
         return productResults
     }
 
-    func markUnavailableAlkoProducts(
+    static func markUnavailableAlkoProducts(
         _ connection: PostgresConnection,
         logger: Logger,
         excludingProductIds: [UUID],
@@ -380,7 +380,7 @@ struct AlkoRepository: Sendable {
         return affectedCount
     }
 
-    func upsertStores(_ connection: PostgresConnection, logger: Logger, stores: [AlkoStoreResponse]) async throws -> [(id: String, isNewRecord: Bool)] {
+    static func upsertStores(_ connection: PostgresConnection, logger: Logger, stores: [AlkoStoreResponse]) async throws -> [(id: String, isNewRecord: Bool)] {
         let columns = [
             "store_external_id",
             "name",
@@ -429,7 +429,7 @@ struct AlkoRepository: Sendable {
         return storeResults
     }
 
-    func upsertWebstoreInventory(_ connection: PostgresConnection, logger: Logger, productId: UUID, availabilities: [AlkoWebAvailabilityResponse]) async throws -> [(id: UUID, isNewRecord: Bool)] {
+    static func upsertWebstoreInventory(_ connection: PostgresConnection, logger: Logger, productId: UUID, availabilities: [AlkoWebAvailabilityResponse]) async throws -> [(id: UUID, isNewRecord: Bool)] {
         let columns = [
             "product_id",
             "status_code",
@@ -484,7 +484,7 @@ struct AlkoRepository: Sendable {
         return inventoryResults
     }
 
-    func upsertStoreInventory(
+    static func upsertStoreInventory(
         _ connection: PostgresConnection,
         logger: Logger,
         productId: UUID,
@@ -530,7 +530,7 @@ struct AlkoRepository: Sendable {
         return inventoryResults
     }
 
-    func linkAlkoProductToUntappdBeer(
+    static func linkAlkoProductToUntappdBeer(
         _ connection: PostgresConnection,
         logger: Logger,
         alkoProductId: UUID,

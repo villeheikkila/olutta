@@ -1,9 +1,7 @@
 import Foundation
 import PostgresNIO
 
-struct DB {}
-
-extension DB {
+enum UserRepository {
     static func createUser(
         connection: PostgresConnection,
         logger: Logger,
@@ -18,9 +16,7 @@ extension DB {
         }
         throw RepositoryError.noData
     }
-}
 
-extension DB {
     static func verifyTokenId(
         connection: PostgresConnection,
         tokenId: UUID,
@@ -184,9 +180,7 @@ extension DB {
         }
         return nil
     }
-}
 
-extension DB {
     @discardableResult
     static func addPushNotificationSubscription(
         connection: PostgresConnection,

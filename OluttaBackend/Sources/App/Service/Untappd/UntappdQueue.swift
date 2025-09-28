@@ -12,7 +12,7 @@ let untappdQueue = QueueConfiguration<Context>(
             guard let typeValue = message.message["id"], let id = typeValue.intValue else { throw QueueError.invalidPayload }
             try await ctx.pg.withTransaction { tx in
                 let beer = try await ctx.services.untappd.getBeerMetadata(bid: id)
-                try await ctx.repositories.untappd.upsertBeer(tx, logger: ctx.logger, beer: beer.response.beer)
+                try await UntappdRepository.upsertBeer(tx, logger: ctx.logger, beer: beer.response.beer)
                 ctx.logger.info("updated untappd beer record", metadata: ["id": .init(stringLiteral: id.description)])
             }
         case "v1:match-alko-product-to-untappd-product":
@@ -21,10 +21,10 @@ let untappdQueue = QueueConfiguration<Context>(
             }
             try await ctx.pg.withTransaction { tx in
                 let untappdLLM = UntappdLLM(openRouter: ctx.openRouter, untappdService: ctx.services.untappd, logger: ctx.logger)
-                let alkoProduct = try await ctx.repositories.alko.getProductById(tx, logger: ctx.logger, id: id)
+                let alkoProduct = try await AlkoRepository.getProductById(tx, logger: ctx.logger, id: id)
                 let (beer, confidenceScore, reasoning) = try await untappdLLM.searchAndMatch(alkoProduct: alkoProduct)
-                let untappdProductId = try await ctx.repositories.untappd.upsertBeer(tx, logger: ctx.logger, beer: beer)
-                try await ctx.repositories.untappd.createProductMapping(tx, logger: ctx.logger, alkoProductId: alkoProduct.id, untappdProductId: untappdProductId, confidenceScore: confidenceScore, isVerified: false, reasoning: reasoning)
+                let untappdProductId = try await UntappdRepository.upsertBeer(tx, logger: ctx.logger, beer: beer)
+                try await UntappdRepository.createProductMapping(tx, logger: ctx.logger, alkoProductId: alkoProduct.id, untappdProductId: untappdProductId, confidenceScore: confidenceScore, isVerified: false, reasoning: reasoning)
             }
         default:
             ctx.logger.error("unknown message type \(type)")

@@ -1,9 +1,9 @@
 import Foundation
 import PostgresNIO
 
-struct UntappdRepository: Sendable {
+enum UntappdRepository {
     @discardableResult
-    func upsertBeer(
+    static func upsertBeer(
         _ connection: PostgresConnection,
         logger: Logger,
         beer: UntappdBeerResponse.Beer,
@@ -71,7 +71,7 @@ struct UntappdRepository: Sendable {
     }
 
     @discardableResult
-    func createProductMapping(
+    static func createProductMapping(
         _ connection: PostgresConnection,
         logger: Logger,
         alkoProductId: UUID,

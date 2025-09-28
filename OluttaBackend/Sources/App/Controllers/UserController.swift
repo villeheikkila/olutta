@@ -29,7 +29,7 @@ extension UserController {
             throw HTTPError(.unauthorized)
         }
         try await pg.withTransaction { tx in
-            try await DB.addPushNotificationSubscription(connection: tx, deviceId: user.deviceId, storeId: storeId, logger: context.logger)
+            try await UserRepository.addPushNotificationSubscription(connection: tx, deviceId: user.deviceId, storeId: storeId, logger: context.logger)
             return try Response.makeOkResponse()
         }
         return try Response.makeOkResponse()
@@ -43,7 +43,7 @@ extension UserController {
             throw HTTPError(.unauthorized)
         }
         return try await pg.withTransaction { tx in
-            try await DB.removePushNotificationSubscription(connection: tx, deviceId: user.deviceId, storeId: storeId, logger: context.logger)
+            try await UserRepository.removePushNotificationSubscription(connection: tx, deviceId: user.deviceId, storeId: storeId, logger: context.logger)
             return try Response.makeOkResponse()
         }
     }
@@ -57,7 +57,7 @@ extension UserController {
         }
         return try await pg.withTransaction { tx in
             let userId = identity.deviceId
-            let user = try await DB.getUser(connection: tx, logger: context.logger, userId: userId)
+            let user = try await UserRepository.getUser(connection: tx, logger: context.logger, userId: userId)
             guard let user else { throw HTTPError(.notFound) }
             let body = UserEntity(
                 id: user.id,
@@ -77,7 +77,7 @@ extension UserController {
         }
         return try await pg.withTransaction { tx in
             let userId = identity.deviceId
-            try await DB.updateUserDevice(connection: tx, logger: context.logger, userId: userId, deviceId: identity.deviceId, pushNotificationToken: body.pushNotificationToken)
+            try await UserRepository.updateUserDevice(connection: tx, logger: context.logger, userId: userId, deviceId: identity.deviceId, pushNotificationToken: body.pushNotificationToken)
             return try Response.makeOkResponse()
         }
     }

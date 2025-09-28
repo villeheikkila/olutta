@@ -13,7 +13,6 @@ struct Context: QueueContextProtocol {
     let openRouter: OpenAI
     let logger: Logger
     let services: Services
-    let repositories: Repositories
     let config: Config
 }
 
@@ -21,7 +20,6 @@ func buildContext(logger: Logger, config: Config, pgmq: PGMQ, pg: PostgresClient
     let httpClient = HTTPClient.shared
     let persist = RedisPersistDriver(redisConnectionPoolService: redis)
     let openRouter = OpenAI(configuration: .init(token: config.openrouterApiKey, host: "openrouter.ai", basePath: "/api/v1", parsingOptions: .fillRequiredFieldIfKeyNotFound))
-    let repository = Repositories(logger: logger)
     let service = await Services(logger: logger, httpClient: httpClient, config: config)
-    return Context(pgmq: pgmq, pg: pg, redis: redis, persist: persist, openRouter: openRouter, logger: logger, services: service, repositories: repository, config: config)
+    return Context(pgmq: pgmq, pg: pg, redis: redis, persist: persist, openRouter: openRouter, logger: logger, services: service, config: config)
 }

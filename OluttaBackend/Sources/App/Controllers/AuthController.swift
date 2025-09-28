@@ -33,7 +33,7 @@ extension AuthController {
         let refreshTokenId = payload.sub
         return try await pg.withTransaction { tx in
             // check that refresh token has not been revoked
-            let device = try await DB.getUserDeviceByToken(connection: tx, logger: logger, tokenId: refreshTokenId)
+            let device = try await UserRepository.getUserDeviceByToken(connection: tx, logger: logger, tokenId: refreshTokenId)
             guard let device else {
                 context.logger.warning("attempt to refresh access token without corresponding row in user devices")
                 throw HTTPError(.unauthorized)
@@ -70,10 +70,10 @@ extension AuthController {
             let pushNotificationToken = authRequest.pushNotificationToken
             let now = Date()
             // create user
-            let userId = try await DB.createUser(connection: tx, logger: logger)
+            let userId = try await UserRepository.createUser(connection: tx, logger: logger)
             // store refresh token id
             let refreshTokenExpiry = now.addingTimeInterval(356 * 24 * 60 * 60) // 1 year
-            let refreshTokenId = try await DB.createUserDevice(connection: tx, logger: logger, userId: userId, deviceId: deviceId, pushNotificationToken: pushNotificationToken, expiresAt: refreshTokenExpiry)
+            let refreshTokenId = try await UserRepository.createUserDevice(connection: tx, logger: logger, userId: userId, deviceId: deviceId, pushNotificationToken: pushNotificationToken, expiresAt: refreshTokenExpiry)
             let refreshTokenPayload = RefreshTokenPayload(
                 sub: refreshTokenId,
                 iat: now,
