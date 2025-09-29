@@ -3,12 +3,12 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
-extension GetProductsByStoreIdCommand {
+extension GetProductsByStoreIdCommand: AuthenticatedCommand {
     static func execute(
         logger: Logger,
-        identity: UserIdentity,
+        identity _: UserIdentity,
         pg: PostgresClient,
-        request: Request
+        request: Request,
     ) async throws -> Response {
         let products = try await pg.withTransaction { tx in
             try await AlkoRepository.getProductsByStoreId(tx, logger: logger, id: request.storeId)
@@ -22,7 +22,7 @@ extension GetProductsByStoreIdCommand {
                 manufacturer: $0.untappdProduct?.breweryName,
                 price: $0.alkoProduct.price,
                 alcoholPercentage: $0.alkoProduct.abv,
-                beerStyle: $0.untappdProduct?.style
+                beerStyle: $0.untappdProduct?.style,
             )
         }
         return Response(products: productEntities)

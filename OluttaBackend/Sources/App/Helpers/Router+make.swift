@@ -7,7 +7,7 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
-func makeRPCEndpoint(pg: PostgresClient, persist: RedisPersistDriver, jwtKeyCollection: JWTKeyCollection, requestSignatureSalt: String) -> Router<AppRequestContext> {
+func makeRouter(pg: PostgresClient, persist: RedisPersistDriver, jwtKeyCollection: JWTKeyCollection, requestSignatureSalt _: String) -> Router<AppRequestContext> {
     let router = Router(context: AppRequestContext.self)
     router.addMiddleware {
         LogRequestsMiddleware(.info)
@@ -30,108 +30,26 @@ func handleCommand(request: Request, context: AppRequestContext, pg: PostgresCli
         throw HTTPError(.badRequest)
     }
     switch command {
-    case .authenticated(let command):
+    case let .authenticated(command):
         guard let identity = context.identity else {
             throw HTTPError(.unauthorized)
         }
-        let body = try await executeAuthenticatedCommand(
-            command: command,
-            request: request,
-            context: context,
-            identity: identity,
-            pg: pg,
-            persist: persist
-        )
+        let commandType: any AuthenticatedCommand.Type = switch command {
+        case .refreshDevice: RefreshDeviceCommand.self
+        case .getUser: GetUserCommand.self
+        case .subscribeToStore: SubscribeToStoreCommand.self
+        case .unsubscribeFromStore: UnsubscribeFromStoreCommand.self
+        case .getStores: GetStoresCommand.self
+        case .getProductsByStoreId: GetProductsByStoreIdCommand.self
+        }
+        let body = try await execute(commandType, request: request, context: context, identity: identity, pg: pg, persist: persist)
         return try Response.makeJSONResponse(body: body)
-    case .unauthenticated(let command):
-        let body = try await executeUnauthenticatedCommand(command: command, request: request, context: context, pg: pg, jwtKeyCollection: jwtKeyCollection)
+    case let .unauthenticated(command):
+        let commandType: any UnauthenticatedCommand.Type = switch command {
+        case .refreshAccessToken: RefreshAccessTokenCommand.self
+        case .createAnonymousUser: CreateAnonymousUserCommand.self
+        }
+        let body = try await execute(commandType, request: request, context: context, pg: pg, jwtKeyCollection: jwtKeyCollection)
         return try Response.makeJSONResponse(body: body)
-    }
-}
-
-private func executeUnauthenticatedCommand(
-    command: UnauthenticatedCommand,
-    request: Request,
-    context: AppRequestContext,
-    pg: PostgresClient,
-    jwtKeyCollection: JWTKeyCollection
-) async throws -> any Codable {
-    switch command {
-    case .refreshAccessToken:
-        let requestData = try await request.decode(as: RefreshAccessTokenCommand.Request.self, context: context)
-        return try await RefreshAccessTokenCommand.execute(
-            logger: context.logger,
-            pg: pg,
-            jwtKeyCollection: jwtKeyCollection,
-            request: requestData
-        )
-    case .createAnonymousUser:
-        let requestData = try await request.decode(as: CreateAnonymousUserCommand.Request.self, context: context)
-        return try await CreateAnonymousUserCommand.execute(
-            logger: context.logger,
-            pg: pg,
-            jwtKeyCollection: jwtKeyCollection,
-            request: requestData
-        )
-    }
-}
-
-private func executeAuthenticatedCommand(
-    command: AuthenticatedCommand,
-    request: Request,
-    context: AppRequestContext,
-    identity: UserIdentity,
-    pg: PostgresClient, persist: RedisPersistDriver
-) async throws -> any Codable {
-    switch command {
-    case .refreshDevice:
-        let requestData = try await request.decode(as: RefreshDeviceCommand.Request.self, context: context)
-        return try await RefreshDeviceCommand.execute(
-            logger: context.logger,
-            identity: identity,
-            pg: pg,
-            request: requestData
-        )
-    case .getUser:
-        let requestData = try await request.decode(as: GetUserCommand.Request.self, context: context)
-        return try await GetUserCommand.execute(
-            logger: context.logger,
-            identity: identity,
-            pg: pg,
-            request: requestData
-        )
-    case .subscribeToStore:
-        let requestData = try await request.decode(as: SubscribeToStoreCommand.Request.self, context: context)
-        return try await SubscribeToStoreCommand.execute(
-            logger: context.logger,
-            identity: identity,
-            pg: pg,
-            request: requestData
-        )
-    case .unsubscribeFromStore:
-        let requestData = try await request.decode(as: UnsubscribeFromStoreCommand.Request.self, context: context)
-        return try await UnsubscribeFromStoreCommand.execute(
-            logger: context.logger,
-            identity: identity,
-            pg: pg,
-            request: requestData
-        )
-    case .getStores:
-        let requestData = try await request.decode(as: GetStoresCommand.Request.self, context: context)
-        return try await GetStoresCommand.execute(
-            logger: context.logger,
-            identity: identity,
-            pg: pg,
-            persist: persist,
-            request: requestData
-        )
-    case .getProductsByStoreId:
-        let requestData = try await request.decode(as: GetProductsByStoreIdCommand.Request.self, context: context)
-        return try await GetProductsByStoreIdCommand.execute(
-            logger: context.logger,
-            identity: identity,
-            pg: pg,
-            request: requestData
-        )
     }
 }

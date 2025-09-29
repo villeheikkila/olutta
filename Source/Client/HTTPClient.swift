@@ -296,17 +296,17 @@ public struct RPCClient {
     }
 
     public func call<Cmd: CommandMetadata>(
-        _ commandType: Cmd.Type,
-        with request: Cmd.RequestType
+        _: Cmd.Type,
+        with request: Cmd.RequestType,
     ) async throws -> Cmd.ResponseType {
         do {
             return try await httpClient.post(
                 path: "v1/rpc/\(Cmd.name)",
-                body: request
+                body: request,
             )
-        } catch HTTPClientError.httpError(let code, let data) {
+        } catch let HTTPClientError.httpError(code, data) {
             throw RPCError.httpError(code: code, data: data)
-        } catch HTTPClientError.decodingFailed(let error) {
+        } catch let HTTPClientError.decodingFailed(error) {
             throw RPCError.decodingError(error)
         } catch {
             throw RPCError.networkError(error)
@@ -314,18 +314,18 @@ public struct RPCClient {
     }
 
     public func call<Cmd: CommandMetadata>(
-        _ commandType: Cmd.Type,
+        _: Cmd.Type,
         with request: Cmd.RequestType,
-        path: APIEndpoint
+        path: APIEndpoint,
     ) async throws(RPCError) -> Cmd.ResponseType {
         do {
             return try await httpClient.post(
                 path: path,
-                body: request
+                body: request,
             )
-        } catch HTTPClientError.httpError(let code, let data) {
+        } catch let HTTPClientError.httpError(code, data) {
             throw RPCError.httpError(code: code, data: data)
-        } catch HTTPClientError.decodingFailed(let error) {
+        } catch let HTTPClientError.decodingFailed(error) {
             throw RPCError.decodingError(error)
         } catch {
             throw RPCError.networkError(error)
@@ -341,14 +341,14 @@ public enum RPCError: Error, LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .networkError(let error):
-            return "Network error: \(error.localizedDescription)"
-        case .httpError(let code, _):
-            return "HTTP error with status code: \(code)"
-        case .decodingError(let error):
-            return "Failed to decode response: \(error.localizedDescription)"
-        case .commandNotFound(let command):
-            return "Command not found: \(command)"
+        case let .networkError(error):
+            "Network error: \(error.localizedDescription)"
+        case let .httpError(code, _):
+            "HTTP error with status code: \(code)"
+        case let .decodingError(error):
+            "Failed to decode response: \(error.localizedDescription)"
+        case let .commandNotFound(command):
+            "Command not found: \(command)"
         }
     }
 }

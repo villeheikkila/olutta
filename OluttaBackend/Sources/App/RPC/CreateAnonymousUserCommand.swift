@@ -6,14 +6,14 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
-extension CreateAnonymousUserCommand {
+extension CreateAnonymousUserCommand: UnauthenticatedCommand {
     static func execute(
         logger: Logger,
         pg: PostgresClient,
         jwtKeyCollection: JWTKeyCollection,
-        request: Request
+        request: Request,
     ) async throws -> Response {
-        return try await pg.withTransaction { tx in
+        try await pg.withTransaction { tx in
             let deviceId = request.deviceId
             let pushNotificationToken = request.pushNotificationToken
             let now = Date()
@@ -27,12 +27,12 @@ extension CreateAnonymousUserCommand {
                 userId: userId,
                 deviceId: deviceId,
                 pushNotificationToken: pushNotificationToken,
-                expiresAt: refreshTokenExpiry
+                expiresAt: refreshTokenExpiry,
             )
             let refreshTokenPayload = RefreshTokenPayload(
                 sub: refreshTokenId,
                 iat: now,
-                exp: refreshTokenExpiry
+                exp: refreshTokenExpiry,
             )
             let refreshToken = try await jwtKeyCollection.sign(refreshTokenPayload)
             // access token
@@ -44,7 +44,7 @@ extension CreateAnonymousUserCommand {
                 userId: userId,
                 refreshTokenId: refreshTokenId,
                 iat: now,
-                exp: accessTokenExpiry
+                exp: accessTokenExpiry,
             )
             let accessToken = try await jwtKeyCollection.sign(accessTokenPayload)
             // response
@@ -52,7 +52,7 @@ extension CreateAnonymousUserCommand {
                 refreshToken: refreshToken,
                 refreshTokenExpiresAt: refreshTokenExpiry,
                 accessToken: accessToken,
-                accessTokenExpiresAt: accessTokenExpiry
+                accessTokenExpiresAt: accessTokenExpiry,
             )
         }
     }

@@ -3,19 +3,19 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
-extension SubscribeToStoreCommand {
+extension SubscribeToStoreCommand: AuthenticatedCommand {
     static func execute(
         logger: Logger,
         identity: UserIdentity,
         pg: PostgresClient,
-        request: Request
+        request: Request,
     ) async throws -> Response {
-        return try await pg.withTransaction { tx in
+        try await pg.withTransaction { tx in
             try await UserRepository.addPushNotificationSubscription(
                 connection: tx,
                 deviceId: identity.deviceId,
                 storeId: request.storeId,
-                logger: logger
+                logger: logger,
             )
             return Response()
         }

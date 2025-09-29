@@ -4,20 +4,13 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
-extension GetStoresCommand {
+extension GetStoresCommand: AuthenticatedCommand {
     static func execute(
         logger: Logger,
-        identity: UserIdentity,
+        identity _: UserIdentity,
         pg: PostgresClient,
-        persist: RedisPersistDriver,
-        request: Request
+        request _: Request,
     ) async throws -> Response {
-        let key = "stores::v2"
-        let cachedValue = try await persist.get(key: key, as: [StoreEntity].self)
-        if let cachedValue {
-            logger.info("returning cached stores")
-            return Response(stores: cachedValue)
-        }
         let stores = try await pg.withTransaction { tx in
             try await AlkoRepository.getStores(tx, logger: logger)
         }
@@ -30,10 +23,9 @@ extension GetStoresCommand {
                 city: store.city,
                 postalCode: store.postalCode,
                 latitude: store.latitude,
-                longitude: store.longitude
+                longitude: store.longitude,
             )
         }
-        try await persist.set(key: key, value: storeEntities, expires: .seconds(60))
         return Response(stores: storeEntities)
     }
 }

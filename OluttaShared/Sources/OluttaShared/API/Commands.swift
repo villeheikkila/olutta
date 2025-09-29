@@ -210,7 +210,7 @@ public struct CreateAnonymousUserCommand: CommandMetadata {
             refreshToken: String,
             refreshTokenExpiresAt: Date,
             accessToken: String,
-            accessTokenExpiresAt: Date
+            accessTokenExpiresAt: Date,
         ) {
             self.refreshToken = refreshToken
             self.refreshTokenExpiresAt = refreshTokenExpiresAt

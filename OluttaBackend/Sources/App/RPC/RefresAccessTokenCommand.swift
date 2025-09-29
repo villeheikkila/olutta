@@ -6,12 +6,12 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
-extension RefreshAccessTokenCommand {
+extension RefreshAccessTokenCommand: UnauthenticatedCommand {
     static func execute(
         logger: Logger,
         pg: PostgresClient,
         jwtKeyCollection: JWTKeyCollection,
-        request: Request
+        request: Request,
     ) async throws -> Response {
         // verify payload
         let payload: AccessTokenPayload
@@ -42,13 +42,13 @@ extension RefreshAccessTokenCommand {
                 refreshTokenId: refreshTokenId,
                 iat: Date(),
                 // 15 minutes
-                exp: Date().addingTimeInterval(15 * 60)
+                exp: Date().addingTimeInterval(15 * 60),
             )
             let accessToken = try await jwtKeyCollection.sign(payload)
             // response
             return Response(
                 accessToken: accessToken,
-                accessTokenExpiresAt: payload.exp
+                accessTokenExpiresAt: payload.exp,
             )
         }
     }
