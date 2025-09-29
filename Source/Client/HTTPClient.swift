@@ -213,14 +213,14 @@ final class HTTPClient {
 extension HTTPClient {
     func request(
         method: HTTPRequest.Method,
-        endpoint: APIEndpoint,
+        path: APIEndpoint,
         queryItems: [URLQueryItem]? = nil,
         headers: [HTTPField] = [],
         body: Data? = nil,
     ) async throws -> (Data, HTTPResponse) {
         try await request(
             method: method,
-            path: endpoint.path,
+            path: path,
             queryItems: queryItems,
             headers: headers,
             body: body,
@@ -228,25 +228,25 @@ extension HTTPClient {
     }
 
     func get<T: Decodable>(
-        endpoint: APIEndpoint,
+        path: String,
         queryItems: [URLQueryItem]? = nil,
         headers: [HTTPField] = [],
     ) async throws -> T {
         try await get(
-            path: endpoint.path,
+            path: path,
             queryItems: queryItems,
             headers: headers,
         )
     }
 
     func post<T: Decodable>(
-        endpoint: APIEndpoint,
+        path: String,
         body: some Encodable,
         queryItems: [URLQueryItem]? = nil,
         headers: [HTTPField] = [],
     ) async throws -> T {
         try await post(
-            path: endpoint.path,
+            path: path,
             body: body,
             queryItems: queryItems,
             headers: headers,
@@ -254,13 +254,13 @@ extension HTTPClient {
     }
 
     func patch<T: Decodable>(
-        endpoint: APIEndpoint,
+        path: String,
         body: some Encodable,
         queryItems: [URLQueryItem]? = nil,
         headers: [HTTPField] = [],
     ) async throws -> T {
         try await patch(
-            path: endpoint.path,
+            path: path,
             body: body,
             queryItems: queryItems,
             headers: headers,
@@ -268,12 +268,12 @@ extension HTTPClient {
     }
 
     func delete<T: Decodable>(
-        endpoint: APIEndpoint,
+        path: String,
         queryItems: [URLQueryItem]? = nil,
         headers: [HTTPField] = [],
     ) async throws -> T {
         try await delete(
-            path: endpoint.path,
+            path: path,
             queryItems: queryItems,
             headers: headers,
         )
@@ -286,4 +286,69 @@ enum HTTPClientError: Error {
     case invalidResponse
     case httpError(code: Int, data: Data)
     case decodingFailed(Error)
+}
+
+public struct RPCClient {
+    private let httpClient: HTTPClient
+
+    public init(httpClient: HTTPClient) {
+        self.httpClient = httpClient
+    }
+
+    public func call<Cmd: CommandMetadata>(
+        _ commandType: Cmd.Type,
+        with request: Cmd.RequestType
+    ) async throws -> Cmd.ResponseType {
+        do {
+            return try await httpClient.post(
+                path: "v1/rpc/\(Cmd.name)",
+                body: request
+            )
+        } catch HTTPClientError.httpError(let code, let data) {
+            throw RPCError.httpError(code: code, data: data)
+        } catch HTTPClientError.decodingFailed(let error) {
+            throw RPCError.decodingError(error)
+        } catch {
+            throw RPCError.networkError(error)
+        }
+    }
+
+    public func call<Cmd: CommandMetadata>(
+        _ commandType: Cmd.Type,
+        with request: Cmd.RequestType,
+        path: APIEndpoint
+    ) async throws(RPCError) -> Cmd.ResponseType {
+        do {
+            return try await httpClient.post(
+                path: path,
+                body: request
+            )
+        } catch HTTPClientError.httpError(let code, let data) {
+            throw RPCError.httpError(code: code, data: data)
+        } catch HTTPClientError.decodingFailed(let error) {
+            throw RPCError.decodingError(error)
+        } catch {
+            throw RPCError.networkError(error)
+        }
+    }
+}
+
+public enum RPCError: Error, LocalizedError {
+    case networkError(Error)
+    case httpError(code: Int, data: Data)
+    case decodingError(Error)
+    case commandNotFound(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .networkError(let error):
+            return "Network error: \(error.localizedDescription)"
+        case .httpError(let code, _):
+            return "HTTP error with status code: \(code)"
+        case .decodingError(let error):
+            return "Failed to decode response: \(error.localizedDescription)"
+        case .commandNotFound(let command):
+            return "Command not found: \(command)"
+        }
+    }
 }

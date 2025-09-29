@@ -12,7 +12,7 @@ struct AddDeviceTableMigration: DatabaseMigration {
                 token_id TEXT,
                 created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-            );
+            )
             """,
             logger: logger,
         )

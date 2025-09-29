@@ -87,7 +87,7 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
     // router
     let jwtKeyCollection = JWTKeyCollection()
     await jwtKeyCollection.add(hmac: HMACKey(stringLiteral: config.jwtSecret), digestAlgorithm: .sha256, kid: JWKIdentifier(stringLiteral: config.serverName.lowercased()))
-    let router = makeRouter(pg: postgresClient, persist: persist, jwtKeyCollection: jwtKeyCollection, requestSignatureSalt: config.requestSignatureSalt)
+    let router = makeRPCEndpoint(pg: postgresClient, persist: persist, jwtKeyCollection: jwtKeyCollection, requestSignatureSalt: config.requestSignatureSalt)
     // app
     logger.info("starting \(config.serverName) server on port \(config.host):\(config.port)...")
     var app = Application(
