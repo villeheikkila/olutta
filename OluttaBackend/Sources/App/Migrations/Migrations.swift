@@ -5,4 +5,5 @@ let allMigrations: [DatabaseMigration] = [
     ScheduleAvailabilityRefreshMigration(),
     AddDeviceTableMigration(),
     AddPushNotificationSubscriptionTableMigration(),
+    CreateUsersTableMigration(),
 ]

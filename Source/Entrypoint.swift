@@ -5,7 +5,7 @@ import SwiftUI
 struct Entrypoint: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var appModel = AppModel(httpClient: .init(
-        baseURL: URL(string: "https://73259ff8b11b.ngrok-free.app")!,
+        baseURL: URL(string: " https://a726416200fb.ngrok-free.app")!,
         secretKey: "a1b2c3d4e5f6g7h8i9j0k",
     ), keychain: Keychain(service: Bundle.main.bundleIdentifier!))
 
@@ -16,7 +16,7 @@ struct Entrypoint: App {
             }
             .environment(appModel)
             .onReceive(for: .pushNotificationTokenObtained, subject: PushNotificationManager.shared) { message in Task {
-                appModel.refreshPushNotificationToken(pushNotificationToken: message.token)
+                await appModel.updatePushNotificationToken(message.token)
             }
             }
         }
@@ -33,7 +33,7 @@ struct LoadingWrapper<Content: View>: View {
 
     var body: some View {
         switch appModel.status {
-        case .authenticating:
+        case .authenticating, .unauthenticated:
             IntroPage()
         case .loading:
             ProgressView()

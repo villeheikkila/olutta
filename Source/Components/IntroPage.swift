@@ -66,9 +66,7 @@ struct IntroPage: View {
                     VStack(spacing: 12) {
                         Button(.continue, action: {
                             Task {
-                                do { try await appModel.createAnonymousUser() } catch {
-                                    print("error")
-                                }
+                                await appModel.initialize()
                             }
                         })
                         .buttonStyle(.glass)

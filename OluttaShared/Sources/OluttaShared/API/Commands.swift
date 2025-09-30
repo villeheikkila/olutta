@@ -159,7 +159,7 @@ public struct UnsubscribeFromStoreCommand: CommandMetadata {
     }
 }
 
-public struct RefreshAccessTokenCommand: CommandMetadata {
+public struct RefreshTokensCommand: CommandMetadata {
     public typealias RequestType = Request
     public typealias ResponseType = Response
     public static let name = Command.unauthenticated(.refreshAccessToken)
@@ -176,10 +176,14 @@ public struct RefreshAccessTokenCommand: CommandMetadata {
     public struct Response: Codable, Sendable {
         public let accessToken: String
         public let accessTokenExpiresAt: Date
+        public let refreshToken: String
+        public let refreshTokenExpiresAt: Date
 
-        public init(accessToken: String, accessTokenExpiresAt: Date) {
+        public init(accessToken: String, accessTokenExpiresAt: Date, refreshToken: String, refreshTokenExpiresAt: Date) {
             self.accessToken = accessToken
             self.accessTokenExpiresAt = accessTokenExpiresAt
+            self.refreshToken = refreshToken
+            self.refreshTokenExpiresAt = refreshTokenExpiresAt
         }
     }
 }
@@ -192,9 +196,9 @@ public struct CreateAnonymousUserCommand: CommandMetadata {
 
     public struct Request: Codable, Sendable {
         public let deviceId: UUID
-        public let pushNotificationToken: String
+        public let pushNotificationToken: String?
 
-        public init(deviceId: UUID, pushNotificationToken: String) {
+        public init(deviceId: UUID, pushNotificationToken: String?) {
             self.deviceId = deviceId
             self.pushNotificationToken = pushNotificationToken
         }

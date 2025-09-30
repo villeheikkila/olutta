@@ -46,7 +46,7 @@ func handleCommand(request: Request, context: AppRequestContext, pg: PostgresCli
         return try Response.makeJSONResponse(body: body)
     case let .unauthenticated(command):
         let commandType: any UnauthenticatedCommand.Type = switch command {
-        case .refreshAccessToken: RefreshAccessTokenCommand.self
+        case .refreshAccessToken: RefreshTokensCommand.self
         case .createAnonymousUser: CreateAnonymousUserCommand.self
         }
         let body = try await execute(commandType, request: request, context: context, pg: pg, jwtKeyCollection: jwtKeyCollection)

@@ -5,6 +5,20 @@ struct CreateUsersTableMigration: DatabaseMigration {
     func apply(connection: PostgresConnection, logger: Logger) async throws {
         try await connection.query(
             """
+            DROP TRIGGER IF EXISTS tg__update_push_notification_subscription_updated_at ON public.push_notification_subscription;
+            """,
+            logger: logger,
+        )
+
+        try await connection.query(
+            """
+            DROP TABLE IF EXISTS public.push_notification_subscription;
+            """,
+            logger: logger,
+        )
+
+        try await connection.query(
+            """
             CREATE TABLE IF NOT EXISTS public.users (
                 id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                 created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -117,7 +131,7 @@ struct CreateUsersTableMigration: DatabaseMigration {
         try await connection.query(
             """
             CREATE TRIGGER tg__update_push_notification_subscription_updated_at
-                BEFORE UPDATE ON public.push_notification_subscription
+                BEFORE UPDATE ON public.device_push_notification_subscription
                 FOR EACH ROW
                 EXECUTE FUNCTION fnc__update_updated_at_column();
             """,
@@ -125,28 +139,5 @@ struct CreateUsersTableMigration: DatabaseMigration {
         )
     }
 
-    func revert(connection: PostgresConnection, logger: Logger) async throws {
-        try await connection.query(
-            """
-            DROP TRIGGER IF EXISTS tg__update_users_updated_at ON public.users;
-            DROP FUNCTION IF EXISTS fnc__update_updated_at_column();
-            DROP TABLE IF EXISTS public.users CASCADE;
-            DROP EXTENSION IF EXISTS "uuid-ossp";
-            """,
-            logger: logger,
-        )
-
-        try await connection.query(
-            """
-            DROP TRIGGER IF EXISTS tg__update_user_devices_updated_at ON public.user_devices;
-            DROP INDEX IF EXISTS idx_user_devices_user_device;
-            DROP INDEX IF EXISTS idx_user_devices_expires_at;
-            DROP INDEX IF EXISTS idx_user_devices_token_id;
-            DROP INDEX IF EXISTS idx_user_devices_device_id;
-            DROP INDEX IF EXISTS idx_user_devices_user_id;
-            DROP TABLE IF EXISTS public.user_devices CASCADE;
-            """,
-            logger: logger,
-        )
-    }
+    func revert(connection: PostgresConnection, logger: Logger) async throws {}
 }

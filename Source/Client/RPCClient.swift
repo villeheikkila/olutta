@@ -1,21 +1,39 @@
 import Foundation
+import HTTPTypes
 import OluttaShared
 
-public struct RPCClient {
+final class RPCClient {
     private let httpClient: HTTPClient
+    private let path: String
+    private var tokenProvider: (() -> String?)?
 
-    public init(httpClient: HTTPClient) {
+    init(
+        httpClient: HTTPClient,
+        path: String = "v1/rpc"
+    ) {
         self.httpClient = httpClient
+        self.path = path
     }
 
-    public func call<C: CommandMetadata>(
+    func setTokenProvider(_ provider: @escaping () -> String?) {
+        tokenProvider = provider
+    }
+
+    @discardableResult
+    func call<C: CommandMetadata>(
         _: C.Type,
         with request: C.RequestType,
     ) async throws(RPCError) -> C.ResponseType {
+        var headers: [HTTPField] = []
+        if let token = tokenProvider?() {
+            headers.append(.init(name: .authorization, value: "Bearer \(token)"))
+        }
+
         do {
             return try await httpClient.post(
-                path: "v1/rpc/\(Cmd.name)",
+                path: "\(path)/\(C.name)",
                 body: request,
+                headers: headers
             )
         } catch let HTTPClientError.httpError(code, data) {
             throw RPCError.httpError(code: code, data: data)
@@ -26,15 +44,21 @@ public struct RPCClient {
         }
     }
 
-    public func call<Cmd: CommandMetadata>(
+    func call<Cmd: CommandMetadata>(
         _: Cmd.Type,
         with request: Cmd.RequestType,
         endpoint: String,
     ) async throws(RPCError) -> Cmd.ResponseType {
+        var headers: [HTTPField] = []
+        if let token = tokenProvider?() {
+            headers.append(.init(name: .authorization, value: "Bearer \(token)"))
+        }
+
         do {
             return try await httpClient.post(
-                endpoint: endpoint,
+                path: endpoint,
                 body: request,
+                headers: headers
             )
         } catch let HTTPClientError.httpError(code, data) {
             throw RPCError.httpError(code: code, data: data)

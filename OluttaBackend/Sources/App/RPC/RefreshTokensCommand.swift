@@ -6,7 +6,7 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
-extension RefreshAccessTokenCommand: UnauthenticatedCommand {
+extension RefreshTokensCommand: UnauthenticatedCommand {
     static func execute(
         logger: Logger,
         pg: PostgresClient,
@@ -21,10 +21,10 @@ extension RefreshAccessTokenCommand: UnauthenticatedCommand {
             logger.warning("invalid jwt token: \(error)")
             throw HTTPError(.unauthorized)
         }
-        let refreshTokenId = payload.sub
+        let oldRefreshTokenId = payload.sub
         return try await pg.withTransaction { tx in
             // check that refresh token has not been revoked
-            let device = try await UserRepository.getUserDeviceByToken(connection: tx, logger: logger, tokenId: refreshTokenId)
+            let device = try await UserRepository.getUserDeviceByToken(connection: tx, logger: logger, tokenId: oldRefreshTokenId)
             guard let device else {
                 logger.warning("attempt to refresh access token without corresponding row in user devices")
                 throw HTTPError(.unauthorized)
@@ -33,13 +33,30 @@ extension RefreshAccessTokenCommand: UnauthenticatedCommand {
                 logger.warning("attempt to refresh access token with revoked refresh token")
                 throw HTTPError(.unauthorized)
             }
+            let now = Date()
+            // create new refresh token
+            let refreshTokenExpiry = payload.exp // do not extend the refresh token exp period, we only want to use up the old token
+            let newRefreshTokenId = UUID()
+            let refreshTokenId = try await UserRepository.updateRefreshToken(
+                connection: tx,
+                logger: logger,
+                userId: device.userId,
+                oldTokenId: oldRefreshTokenId,
+                newTokenId: newRefreshTokenId
+            )
+            let refreshTokenPayload = RefreshTokenPayload(
+                sub: refreshTokenId,
+                iat: now,
+                exp: refreshTokenExpiry,
+            )
+            let refreshToken = try await jwtKeyCollection.sign(refreshTokenPayload)
             // create new access token
             let accessTokenId = UUID()
             let payload = AccessTokenPayload(
                 sub: accessTokenId,
                 deviceId: device.deviceId,
                 userId: device.userId,
-                refreshTokenId: refreshTokenId,
+                refreshTokenId: newRefreshTokenId,
                 iat: Date(),
                 // 15 minutes
                 exp: Date().addingTimeInterval(15 * 60),
@@ -49,6 +66,8 @@ extension RefreshAccessTokenCommand: UnauthenticatedCommand {
             return Response(
                 accessToken: accessToken,
                 accessTokenExpiresAt: payload.exp,
+                refreshToken: refreshToken,
+                refreshTokenExpiresAt: refreshTokenExpiry
             )
         }
     }

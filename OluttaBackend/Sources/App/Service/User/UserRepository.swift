@@ -57,6 +57,30 @@ enum UserRepository {
     }
 
     @discardableResult
+    static func updateRefreshToken(
+        connection: PostgresConnection,
+        logger: Logger,
+        userId: UUID,
+        oldTokenId: UUID,
+        newTokenId: UUID
+    ) async throws -> UUID {
+        let result = try await connection.query("""
+            UPDATE public.user_devices 
+            SET 
+                token_id = \(newTokenId)
+                updated_at = NOW(),
+                seen_at = NOW()
+            WHERE token_id = \(oldTokenId) AND user_id = \(userId)
+            RETURNING token_id
+        """, logger: logger)
+
+        for try await (tokenId) in result.decode(UUID.self) {
+            return tokenId
+        }
+        throw RepositoryError.noData
+    }
+
+    @discardableResult
     static func updateUserDevice(
         connection: PostgresConnection,
         logger: Logger,
