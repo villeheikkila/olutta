@@ -196,8 +196,6 @@ struct KeychainError: LocalizedError, CustomDebugStringConvertible {
         }
     }
 
-    // MARK: - Error Cases
-
     /// A function or operation is not implemented.
     /// See [errSecUnimplemented](https://developer.apple.com/documentation/security/errsecunimplemented).
     static let operationNotImplemented: KeychainError = .init(code: .operationNotImplemented)

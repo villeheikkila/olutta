@@ -55,19 +55,14 @@ class AppModel {
     var clusters: [StoreClusterAnnotation] = []
     private let clusterManager = ClusterManager<StoreAnnotation>()
     // deps
-    private let httpClient: HTTPClient
     private let keychain: Keychain
     let rpcClient: RPCClient
 
-    init(httpClient: HTTPClient, keychain: Keychain) {
-        self.httpClient = httpClient
+    init(rpcClient: RPCClient, keychain: Keychain) {
         self.keychain = keychain
-        self.rpcClient = RPCClient(httpClient: httpClient)
-        rpcClient.setTokenProvider { [weak self] in
-            self?.accessToken
-        }
+        self.rpcClient = rpcClient
     }
-        
+
     func initialize() async {
         await authenticate()
         guard isAuthenticated else {
@@ -76,7 +71,7 @@ class AppModel {
         }
         await loadStores()
     }
-        
+
     private func authenticate() async {
         status = .authenticating
         if let token = getExistingAccessToken() {
@@ -91,23 +86,23 @@ class AppModel {
         }
         await createAnonymousUser()
     }
-    
+
     private func createAnonymousUser() async {
         let deviceId = UUID()
         status = .authenticating
-        
+
         do {
             let response = try await rpcClient.call(
                 CreateAnonymousUserCommand.self,
-                with: .init(deviceId: deviceId, pushNotificationToken: pushNotificationToken)
+                with: .init(deviceId: deviceId, pushNotificationToken: pushNotificationToken),
             )
-            
+
             try saveTokens(
                 accessToken: response.accessToken,
                 refreshToken: response.refreshToken,
-                deviceId: deviceId.uuidString
+                deviceId: deviceId.uuidString,
             )
-            
+
             accessToken = response.accessToken
             isAuthenticated = true
             status = .loading
@@ -116,7 +111,7 @@ class AppModel {
             status = .error(error)
         }
     }
-    
+
     private func refreshAuthentication(deviceId: String) async {
         guard let refreshToken = getExistingRefreshToken() else {
             await createAnonymousUser()
@@ -126,12 +121,12 @@ class AppModel {
         do {
             let response = try await rpcClient.call(
                 RefreshTokensCommand.self,
-                with: .init(refreshToken: refreshToken)
+                with: .init(refreshToken: refreshToken),
             )
             try saveTokens(
                 accessToken: response.accessToken,
                 refreshToken: response.refreshToken,
-                deviceId: deviceId
+                deviceId: deviceId,
             )
             accessToken = response.accessToken
             isAuthenticated = true
@@ -141,21 +136,21 @@ class AppModel {
             await createAnonymousUser()
         }
     }
-    
+
     func updatePushNotificationToken(_ token: String) async {
         pushNotificationToken = token
         if isAuthenticated {
             do {
                 try await rpcClient.call(
                     RefreshDeviceCommand.self,
-                    with: .init(pushNotificationToken: token)
+                    with: .init(pushNotificationToken: token),
                 )
             } catch {
                 logger.error("Failed to update push notification token: \(error)")
             }
         }
     }
-    
+
     func signOut() async {
         do {
             try keychain.deleteItem(forKey: "access_token")
@@ -164,7 +159,7 @@ class AppModel {
         } catch {
             logger.error("Failed to clear keychain: \(error)")
         }
-        
+
         accessToken = nil
         isAuthenticated = false
         stores = []
@@ -173,7 +168,7 @@ class AppModel {
         selectedStore = nil
         status = .unauthenticated
     }
-        
+
     private func loadStores() async {
         status = .loading
         do {
@@ -197,20 +192,20 @@ class AppModel {
         do {
             let products: [ProductEntity] = try await rpcClient.call(
                 GetProductsByStoreIdCommand.self,
-                with: .init(storeId: id)
+                with: .init(storeId: id),
             ).products
             productsByStore[id] = products
         } catch {
             logger.error("Failed to load products: \(error.localizedDescription)")
         }
     }
-    
+
     func initializeClusters() async {
         let annotations = stores.map { store in
             StoreAnnotation(
                 id: store.id.uuidString,
                 coordinate: store.location,
-                store: store
+                store: store,
             )
         }
         await clusterManager.add(annotations)
@@ -239,20 +234,20 @@ class AppModel {
                 clusters.append(StoreClusterAnnotation(
                     id: newItem.id,
                     coordinate: newItem.coordinate,
-                    count: newItem.memberAnnotations.count
+                    count: newItem.memberAnnotations.count,
                 ))
             }
         }
     }
-    
+
     func toggleSubscription() async throws {
         guard let selectedStore else { return }
-        
+
         if subscribedStoreIds.contains(selectedStore.id) {
             do {
                 try await rpcClient.call(
                     UnsubscribeFromStoreCommand.self,
-                    with: .init(storeId: selectedStore.id)
+                    with: .init(storeId: selectedStore.id),
                 )
                 subscribedStoreIds = subscribedStoreIds.filter { $0 != selectedStore.id }
             } catch {
@@ -263,7 +258,7 @@ class AppModel {
             do {
                 try await rpcClient.call(
                     SubscribeToStoreCommand.self,
-                    with: .init(storeId: selectedStore.id)
+                    with: .init(storeId: selectedStore.id),
                 )
                 subscribedStoreIds.append(selectedStore.id)
             } catch {
@@ -272,7 +267,7 @@ class AppModel {
             }
         }
     }
-        
+
     private func getExistingAccessToken() -> String? {
         do {
             let data = try keychain.data(forKey: "access_token")
@@ -281,7 +276,7 @@ class AppModel {
             return nil
         }
     }
-    
+
     private func getExistingRefreshToken() -> String? {
         do {
             let data = try keychain.data(forKey: "refresh_token")
@@ -290,7 +285,7 @@ class AppModel {
             return nil
         }
     }
-    
+
     private func getExistingDeviceId() -> String? {
         do {
             let data = try keychain.data(forKey: "device-id")
@@ -299,7 +294,7 @@ class AppModel {
             return nil
         }
     }
-    
+
     private func saveTokens(accessToken: String, refreshToken: String, deviceId: String) throws {
         try keychain.set(accessToken.data(using: .utf8)!, forKey: "access_token")
         try keychain.set(refreshToken.data(using: .utf8)!, forKey: "refresh_token")

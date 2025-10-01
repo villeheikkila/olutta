@@ -42,7 +42,7 @@ extension RefreshTokensCommand: UnauthenticatedCommand {
                 logger: logger,
                 userId: device.userId,
                 oldTokenId: oldRefreshTokenId,
-                newTokenId: newRefreshTokenId
+                newTokenId: newRefreshTokenId,
             )
             let refreshTokenPayload = RefreshTokenPayload(
                 sub: refreshTokenId,
@@ -67,7 +67,7 @@ extension RefreshTokensCommand: UnauthenticatedCommand {
                 accessToken: accessToken,
                 accessTokenExpiresAt: payload.exp,
                 refreshToken: refreshToken,
-                refreshTokenExpiresAt: refreshTokenExpiry
+                refreshTokenExpiresAt: refreshTokenExpiry,
             )
         }
     }

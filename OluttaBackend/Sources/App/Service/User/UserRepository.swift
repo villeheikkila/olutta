@@ -62,7 +62,7 @@ enum UserRepository {
         logger: Logger,
         userId: UUID,
         oldTokenId: UUID,
-        newTokenId: UUID
+        newTokenId: UUID,
     ) async throws -> UUID {
         let result = try await connection.query("""
             UPDATE public.user_devices 

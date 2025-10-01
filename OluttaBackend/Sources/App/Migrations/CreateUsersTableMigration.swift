@@ -139,5 +139,5 @@ struct CreateUsersTableMigration: DatabaseMigration {
         )
     }
 
-    func revert(connection: PostgresConnection, logger: Logger) async throws {}
+    func revert(connection _: PostgresConnection, logger _: Logger) async throws {}
 }

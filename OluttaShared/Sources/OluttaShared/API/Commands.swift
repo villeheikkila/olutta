@@ -28,6 +28,15 @@ public enum Command: Sendable {
             return nil
         }
     }
+
+    public var commandName: String {
+        switch self {
+        case let .authenticated(command):
+            command.rawValue
+        case let .unauthenticated(command):
+            command.rawValue
+        }
+    }
 }
 
 public protocol CommandMetadata {
@@ -35,6 +44,12 @@ public protocol CommandMetadata {
     associatedtype ResponseType: Codable
 
     static var name: Command { get }
+}
+
+public extension CommandMetadata {
+    var command: String {
+        Self.name.commandName
+    }
 }
 
 public struct GetStoresCommand: CommandMetadata {

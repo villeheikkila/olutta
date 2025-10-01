@@ -4,9 +4,9 @@ import SwiftUI
 @main
 struct Entrypoint: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @State private var appModel = AppModel(httpClient: .init(
-        baseURL: URL(string: " https://a726416200fb.ngrok-free.app")!,
-        secretKey: "a1b2c3d4e5f6g7h8i9j0k",
+    @State private var appModel = AppModel(rpcClient: .init(
+        baseURL: URL(string: "http://localhost:3000")!,
+        secretKey: "a1b2c3d4e5f6g7h8i9j0k", rpcPath: "/v1/rpc",
     ), keychain: Keychain(service: Bundle.main.bundleIdentifier!))
 
     var body: some Scene {
