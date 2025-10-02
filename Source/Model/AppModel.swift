@@ -56,38 +56,32 @@ class AppModel {
     private let clusterManager = ClusterManager<StoreAnnotation>()
     // deps
     private let keychain: Keychain
-    let rpcClient: RPCClient
+    let authManager: AuthManager
+    let rpcClient: RPCClientProtocol
+    let arpcClient: AuthenticatedRPCClient
 
-    init(rpcClient: RPCClient, keychain: Keychain) {
+    init(rpcClient: RPCClientProtocol, keychain: Keychain) {
         self.keychain = keychain
+        // initialize session storage
+        let sessionStorage = KeychainSessionStorage(
+            service: Bundle.main.bundleIdentifier ?? "com.olutta.app",
+            key: "token_session"
+        )
+        // auth
+        self.authManager = AuthManager(storage: sessionStorage, rpcClient: rpcClient)
+        // rpc
         self.rpcClient = rpcClient
+        self.arpcClient = AuthenticatedRPCClient(
+            rpcClient: rpcClient,
+            authManager: authManager
+        )
     }
 
     func initialize() async {
-        await authenticate()
-        guard isAuthenticated else {
-            logger.error("Failed to authenticate")
-            return
-        }
-        await loadStores()
+        await authManager.initialize()
     }
 
-    private func authenticate() async {
-        status = .authenticating
-        if let token = getExistingAccessToken() {
-            accessToken = token
-            isAuthenticated = true
-            status = .loading
-            return
-        }
-        if let deviceId = getExistingDeviceId() {
-            await refreshAuthentication(deviceId: deviceId)
-            return
-        }
-        await createAnonymousUser()
-    }
-
-    private func createAnonymousUser() async {
+    func createAnonymousUser() async {
         let deviceId = UUID()
         status = .authenticating
 
@@ -96,44 +90,18 @@ class AppModel {
                 CreateAnonymousUserCommand.self,
                 with: .init(deviceId: deviceId, pushNotificationToken: pushNotificationToken),
             )
-
-            try saveTokens(
+            await authManager.setSession(
                 accessToken: response.accessToken,
+                accessTokenExpiresAt: response.accessTokenExpiresAt,
                 refreshToken: response.refreshToken,
-                deviceId: deviceId.uuidString,
+                refreshTokenExpiresAt: response.refreshTokenExpiresAt,
             )
-
             accessToken = response.accessToken
             isAuthenticated = true
             status = .loading
         } catch {
             logger.error("Failed to create anonymous user: \(error)")
             status = .error(error)
-        }
-    }
-
-    private func refreshAuthentication(deviceId: String) async {
-        guard let refreshToken = getExistingRefreshToken() else {
-            await createAnonymousUser()
-            return
-        }
-        status = .authenticating
-        do {
-            let response = try await rpcClient.call(
-                RefreshTokensCommand.self,
-                with: .init(refreshToken: refreshToken),
-            )
-            try saveTokens(
-                accessToken: response.accessToken,
-                refreshToken: response.refreshToken,
-                deviceId: deviceId,
-            )
-            accessToken = response.accessToken
-            isAuthenticated = true
-            status = .loading
-        } catch {
-            logger.error("Failed to refresh token: \(error)")
-            await createAnonymousUser()
         }
     }
 
@@ -149,24 +117,6 @@ class AppModel {
                 logger.error("Failed to update push notification token: \(error)")
             }
         }
-    }
-
-    func signOut() async {
-        do {
-            try keychain.deleteItem(forKey: "access_token")
-            try keychain.deleteItem(forKey: "refresh_token")
-            try keychain.deleteItem(forKey: "device-id")
-        } catch {
-            logger.error("Failed to clear keychain: \(error)")
-        }
-
-        accessToken = nil
-        isAuthenticated = false
-        stores = []
-        productsByStore = [:]
-        subscribedStoreIds = []
-        selectedStore = nil
-        status = .unauthenticated
     }
 
     private func loadStores() async {
@@ -266,39 +216,6 @@ class AppModel {
                 throw error
             }
         }
-    }
-
-    private func getExistingAccessToken() -> String? {
-        do {
-            let data = try keychain.data(forKey: "access_token")
-            return String(data: data, encoding: .utf8)
-        } catch {
-            return nil
-        }
-    }
-
-    private func getExistingRefreshToken() -> String? {
-        do {
-            let data = try keychain.data(forKey: "refresh_token")
-            return String(data: data, encoding: .utf8)
-        } catch {
-            return nil
-        }
-    }
-
-    private func getExistingDeviceId() -> String? {
-        do {
-            let data = try keychain.data(forKey: "device-id")
-            return String(data: data, encoding: .utf8)
-        } catch {
-            return nil
-        }
-    }
-
-    private func saveTokens(accessToken: String, refreshToken: String, deviceId: String) throws {
-        try keychain.set(accessToken.data(using: .utf8)!, forKey: "access_token")
-        try keychain.set(refreshToken.data(using: .utf8)!, forKey: "refresh_token")
-        try keychain.set(deviceId.data(using: .utf8)!, forKey: "device-id")
     }
 }
 

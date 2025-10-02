@@ -38,9 +38,6 @@
         }
       }
     },
-    "fatal" : {
-
-    },
     "labels.close" : {
       "extractionState" : "manual",
       "localizations" : {
