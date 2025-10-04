@@ -15,7 +15,7 @@ extension RefreshDeviceCommand: AuthenticatedCommand {
                 connection: tx,
                 logger: logger,
                 userId: identity.userId,
-                deviceId: identity.deviceId,
+                deviceId: request.deviceId,
                 pushNotificationToken: request.pushNotificationToken,
             )
             return Response()

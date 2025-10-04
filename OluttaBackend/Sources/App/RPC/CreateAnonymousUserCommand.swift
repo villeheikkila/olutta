@@ -11,24 +11,15 @@ extension CreateAnonymousUserCommand: UnauthenticatedCommand {
         logger: Logger,
         pg: PostgresClient,
         jwtKeyCollection: JWTKeyCollection,
-        request: Request,
+        request _: Request,
     ) async throws -> Response {
         try await pg.withTransaction { tx in
-            let deviceId = request.deviceId
-            let pushNotificationToken = request.pushNotificationToken
             let now = Date()
             // create user
             let userId = try await UserRepository.createUser(connection: tx, logger: logger)
             // store refresh token id
             let refreshTokenExpiry = now.addingTimeInterval(356 * 24 * 60 * 60) // 1 year
-            let refreshTokenId = try await UserRepository.createUserDevice(
-                connection: tx,
-                logger: logger,
-                userId: userId,
-                deviceId: deviceId,
-                pushNotificationToken: pushNotificationToken,
-                expiresAt: refreshTokenExpiry,
-            )
+            let refreshTokenId = try await UserRepository.createRefreshToken(connection: tx, logger: logger, userId: userId, expiresAt: refreshTokenExpiry)
             let refreshTokenPayload = RefreshTokenPayload(
                 sub: refreshTokenId,
                 iat: now,
@@ -40,7 +31,6 @@ extension CreateAnonymousUserCommand: UnauthenticatedCommand {
             let accessTokenExpiry = now.addingTimeInterval(15 * 60) // 15 minutes
             let accessTokenPayload = AccessTokenPayload(
                 sub: accessTokenId,
-                deviceId: deviceId,
                 userId: userId,
                 refreshTokenId: refreshTokenId,
                 iat: now,

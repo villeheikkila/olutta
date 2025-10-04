@@ -12,8 +12,7 @@ extension GetUserCommand: AuthenticatedCommand {
         request _: Request,
     ) async throws -> Response {
         try await pg.withTransaction { tx in
-            let userId = identity.deviceId
-            let user = try await UserRepository.getUser(connection: tx, logger: logger, userId: userId)
+            let user = try await UserRepository.getUser(connection: tx, logger: logger, userId: identity.userId)
             guard let user else { throw HTTPError(.notFound) }
             return Response(
                 id: user.id,

@@ -13,8 +13,9 @@ extension SubscribeToStoreCommand: AuthenticatedCommand {
         try await pg.withTransaction { tx in
             try await UserRepository.addPushNotificationSubscription(
                 connection: tx,
-                deviceId: identity.deviceId,
+                deviceId: request.deviceId,
                 storeId: request.storeId,
+                userId: identity.userId,
                 logger: logger,
             )
             return Response()

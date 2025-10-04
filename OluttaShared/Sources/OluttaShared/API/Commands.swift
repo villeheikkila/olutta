@@ -103,9 +103,11 @@ public struct RefreshDeviceCommand: CommandMetadata {
 
     public struct Request: Codable, Sendable {
         public let pushNotificationToken: String
+        public let deviceId: UUID
 
-        public init(pushNotificationToken: String) {
+        public init(pushNotificationToken: String, deviceId: UUID) {
             self.pushNotificationToken = pushNotificationToken
+            self.deviceId = deviceId
         }
     }
 }
@@ -145,9 +147,11 @@ public struct SubscribeToStoreCommand: CommandMetadata {
 
     public struct Request: Codable, Sendable {
         public let storeId: UUID
+        public let deviceId: UUID
 
-        public init(storeId: UUID) {
+        public init(storeId: UUID, deviceId: UUID) {
             self.storeId = storeId
+            self.deviceId = deviceId
         }
     }
 
@@ -163,9 +167,11 @@ public struct UnsubscribeFromStoreCommand: CommandMetadata {
 
     public struct Request: Codable, Sendable {
         public let storeId: UUID
+        public let deviceId: UUID
 
-        public init(storeId: UUID) {
+        public init(storeId: UUID, deviceId: UUID) {
             self.storeId = storeId
+            self.deviceId = deviceId
         }
     }
 
@@ -210,13 +216,7 @@ public struct CreateAnonymousUserCommand: CommandMetadata {
     public static let authenticated = false
 
     public struct Request: Codable, Sendable {
-        public let deviceId: UUID
-        public let pushNotificationToken: String?
-
-        public init(deviceId: UUID, pushNotificationToken: String?) {
-            self.deviceId = deviceId
-            self.pushNotificationToken = pushNotificationToken
-        }
+        public init() {}
     }
 
     public struct Response: Codable, Sendable {

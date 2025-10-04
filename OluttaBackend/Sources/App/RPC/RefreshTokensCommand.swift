@@ -54,7 +54,6 @@ extension RefreshTokensCommand: UnauthenticatedCommand {
             let accessTokenId = UUID()
             let payload = AccessTokenPayload(
                 sub: accessTokenId,
-                deviceId: device.deviceId,
                 userId: device.userId,
                 refreshTokenId: newRefreshTokenId,
                 iat: Date(),

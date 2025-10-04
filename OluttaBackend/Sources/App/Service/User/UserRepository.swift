@@ -17,20 +17,36 @@ enum UserRepository {
         throw RepositoryError.noData
     }
 
-    static func verifyTokenId(
+    static func createRefreshToken(
         connection: PostgresConnection,
-        tokenId: UUID,
         logger: Logger,
-    ) async throws -> (userId: UUID, deviceId: String)? {
+        userId: UUID,
+        expiresAt: Date
+    ) async throws -> UUID {
         let result = try await connection.query("""
-            SELECT user_id, device_id
-            FROM public.user_devices
-            WHERE token_id = \(tokenId)
-            AND revoked_at IS NULL
-            AND expires_at > NOW()
+            INSERT INTO public.user_refresh_tokens (user_id, expires_at)
+            VALUES (\(userId), \(expiresAt))
+            RETURNING refresh_token_id
         """, logger: logger)
 
-        for try await (userId, deviceId) in result.decode((UUID, String).self) {
+        for try await (refreshTokenId) in result.decode(UUID.self) {
+            return refreshTokenId
+        }
+        throw RepositoryError.noData
+    }
+
+    static func getRefreshTokenById(
+        connection: PostgresConnection,
+        refreshTokenId: UUID,
+        logger: Logger
+    ) async throws -> (userId: UUID, deviceId: Int)? {
+        let result = try await connection.query("""
+            SELECT user_id
+            FROM public.user_refresh_tokens
+            WHERE refresh_token_id = \(refreshTokenId)
+        """, logger: logger)
+
+        for try await (userId, deviceId) in result.decode((UUID, Int).self) {
             return (userId: userId, deviceId: deviceId)
         }
         return nil
@@ -210,11 +226,12 @@ enum UserRepository {
         connection: PostgresConnection,
         deviceId: UUID,
         storeId: UUID,
+        userId: UUID,
         logger: Logger,
     ) async throws -> UUID {
         let result = try await connection.query("""
-            INSERT INTO public.device_push_notification_subscription (device_id, store_id)
-            VALUES (\(deviceId), \(storeId))
+            INSERT INTO public.device_push_notification_subscription (device_id, store_id, user_id)
+            VALUES (\(deviceId), \(storeId), \(userId))
             ON CONFLICT (device_id, store_id) DO UPDATE SET
                 updated_at = NOW()
             RETURNING id
@@ -230,11 +247,12 @@ enum UserRepository {
         connection: PostgresConnection,
         deviceId: UUID,
         storeId: UUID,
+        userId: UUID,
         logger: Logger,
     ) async throws {
         try await connection.query("""
             DELETE FROM public.device_push_notification_subscription
-            WHERE device_id = \(deviceId) AND store_id = \(storeId)
+            WHERE device_id = \(deviceId) AND store_id = \(storeId) AND user_id = \(userId)
         """, logger: logger)
     }
 }

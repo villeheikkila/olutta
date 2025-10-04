@@ -2,9 +2,8 @@ import Foundation
 import JWTKit
 
 struct AccessTokenPayload: JWTPayload, Codable {
-    init(sub: UUID, deviceId: UUID, userId: UUID, refreshTokenId: UUID, iat: Date, exp: Date) {
+    init(sub: UUID, userId: UUID, refreshTokenId: UUID, iat: Date, exp: Date) {
         self.sub = sub
-        self.deviceId = deviceId
         self.userId = userId
         self.refreshTokenId = refreshTokenId
         self.iat = iat
@@ -12,7 +11,6 @@ struct AccessTokenPayload: JWTPayload, Codable {
     }
 
     let sub: UUID
-    let deviceId: UUID
     let userId: UUID
     let refreshTokenId: UUID
     let iat: Date
