@@ -80,6 +80,11 @@ class AppModel {
         }
     }
 
+    func signOut() async {
+        await authManager.signOut()
+        status = .unauthenticated
+    }
+
     // authenticated methods
     func intializeAppData() async {
         status = .loading

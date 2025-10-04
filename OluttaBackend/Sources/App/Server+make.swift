@@ -66,13 +66,13 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
         clientId: config.untappdClientId,
         clientSecret: config.untappdClientSecret,
     )
-    let appleService = SignInWithAppleService(logger: logger, httpClient: httpClient, appIdentifier: config.appleBundleId, authenticationMethod: .jwt(pemString: config.siwaToken, keyIdentifier: config.siwaKeyId, teamIdentifier: config.appleTeamId))
+    let appleService = SignInWithAppleService(logger: logger, httpClient: httpClient, appIdentifier: config.appleBundleId, authenticationMethod: .jwt(pemString: config.applePrivateKey, keyIdentifier: config.appleKeyId, teamIdentifier: config.appleTeamId))
     let apnsService = try APNSService(
-        privateKey: config.apnsToken,
-        keyIdentifier: config.appleAPNSKeyId,
+        privateKey: config.applePrivateKey,
+        keyIdentifier: config.appleKeyId,
         teamIdentifier: config.appleTeamId,
         environment: .development,
-        apnsTopic: config.apnsTopic,
+        apnsTopic: config.appleBundleId,
         pg: postgresClient,
     )
     // queue

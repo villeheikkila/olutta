@@ -132,6 +132,10 @@ struct StoreListView: View {
 
     var body: some View {
         List {
+            Button("sign out") { Task {
+                await appModel.signOut()
+            }
+            }
             if searchText.isEmpty {
                 NavigationLink {
                     AvailableToOrderScreen()

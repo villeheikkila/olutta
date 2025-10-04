@@ -82,6 +82,9 @@
         }
       }
     },
+    "sign out" : {
+
+    },
     "Stores" : {
       "extractionState" : "manual",
       "localizations" : {
