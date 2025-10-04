@@ -22,11 +22,10 @@ struct JWTAuthenticator: AuthenticatorMiddleware, Sendable {
             context.logger.warning("invalid jwt token: \(error.localizedDescription)")
             throw HTTPError(.unauthorized)
         }
-        return UserIdentity(tokenId: payload.sub, userId: payload.userId)
+        return UserIdentity(userId: payload.userId)
     }
 }
 
 struct UserIdentity: Sendable {
-    let tokenId: UUID
     let userId: UUID
 }
