@@ -24,15 +24,7 @@ struct Entrypoint: App {
             ContentView()
                 .environment(appModel)
                 .task {
-                    await appModel.initialize()
-                }
-                .onReceive(
-                    for: .pushNotificationTokenObtained,
-                    subject: PushNotificationManager.shared,
-                ) { message in
-                    Task {
-                        await appModel.updatePushNotificationToken(message.token)
-                    }
+                    await appModel.initializeAuthManager()
                 }
         }
     }
@@ -42,13 +34,31 @@ struct ContentView: View {
     @Environment(AppModel.self) private var appModel
 
     var body: some View {
-        switch appModel.authManager.authStatus {
+        switch appModel.status {
         case .loading:
             ProgressView()
-        case .authenticated:
-            StoreMap()
         case .unauthenticated:
             IntroPage()
+        case .ready:
+            AuthenticatedState()
+        case .error(let error):
+            Text(error.localizedDescription)
         }
+    }
+}
+
+struct AuthenticatedState: View {
+    @Environment(AppModel.self) private var appModel
+
+    var body: some View {
+        StoreMap()
+            .onReceive(
+                for: .pushNotificationTokenObtained,
+                subject: PushNotificationManager.shared,
+            ) { message in
+                Task {
+                    await appModel.updatePushNotificationToken(message.token)
+                }
+            }
     }
 }

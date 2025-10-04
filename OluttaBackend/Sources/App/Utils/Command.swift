@@ -101,8 +101,8 @@ func handleCommand(
         return try await executeAuthenticated(SubscribeToStoreCommand.self, request: request, context: context, identity: identity, pg: pg, persist: persist)
     case UnsubscribeFromStoreCommand.name:
         return try await executeAuthenticated(UnsubscribeFromStoreCommand.self, request: request, context: context, identity: identity, pg: pg, persist: persist)
-    case GetStoresCommand.name:
-        return try await executeAuthenticated(GetStoresCommand.self, request: request, context: context, identity: identity, pg: pg, persist: persist)
+    case GetAppData.name:
+        return try await executeAuthenticated(GetAppData.self, request: request, context: context, identity: identity, pg: pg, persist: persist)
     case GetProductsByStoreIdCommand.name:
         return try await executeAuthenticated(GetProductsByStoreIdCommand.self, request: request, context: context, identity: identity, pg: pg, persist: persist)
     default:

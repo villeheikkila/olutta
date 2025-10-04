@@ -43,6 +43,7 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
                 userId: device.userId,
                 oldTokenId: oldRefreshTokenId,
                 newTokenId: newRefreshTokenId,
+                expiresAt: refreshTokenExpiry
             )
             let refreshTokenPayload = RefreshTokenPayload(
                 sub: refreshTokenId,

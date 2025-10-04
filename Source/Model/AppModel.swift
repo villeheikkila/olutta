@@ -21,7 +21,6 @@ struct AlkoStoreEntity: Codable {
 
 enum Status {
     case unauthenticated
-    case authenticating
     case loading
     case ready
     case error(Error)
@@ -32,10 +31,7 @@ class AppModel {
     let logger = Logger(subsystem: "", category: "AppModel")
     // auth
     var status: Status = .unauthenticated
-    var pushNotificationToken: String?
-    private var accessToken: String?
     // app
-    var data: ResponseEntity?
     var error: Error?
     var stores: [StoreEntity] = []
     var productsByStore: [UUID: [ProductEntity]] = [:]
@@ -54,15 +50,13 @@ class AppModel {
     var clusters: [StoreClusterAnnotation] = []
     private let clusterManager = ClusterManager<StoreAnnotation>()
     // deps
-    private let keychain: Keychain
     let authManager: AuthManager
     let rpcClient: AuthenticatedRPCClient
 
     init(rpcClient: RPCClientProtocol, keychain: Keychain) {
-        self.keychain = keychain
         // initialize session storage
         let sessionStorage = KeychainSessionStorage(
-            service: Bundle.main.bundleIdentifier ?? "com.olutta.app",
+            service: Bundle.main.bundleIdentifier ?? "com.bytesized.solutions.olutta",
             key: "token_session",
         )
         // auth
@@ -74,25 +68,46 @@ class AppModel {
         )
     }
 
-    func initialize() async {
+    // methods available when unauthenticated
+    func initializeAuthManager() async {
         await authManager.initialize()
+        let authStatus = Observations { self.authManager.authStatus }
+        for await status in authStatus {
+            switch status {
+            case .unauthenticated:
+                self.status = .unauthenticated
+            case .authenticated:
+                self.status = .ready
+            }
+        }
     }
 
     func createAnonymousUser() async {
-        status = .authenticating
         do {
             try await authManager.createAnonymousUser()
-            status = .loading
+            status = .ready
         } catch {
             logger.error("Failed to create anonymous user: \(error)")
             status = .error(error)
         }
     }
 
+    // authenticated methods
+    func intializeAppData() async {
+        status = .loading
+        do {
+            let appData = try await rpcClient.call(GetAppData.self, with: .init())
+            stores = appData.stores
+            status = .ready
+        } catch {
+            logger.error("Failed to load stores: \(error.localizedDescription)")
+            self.error = error
+            status = .error(error)
+        }
+    }
+
     func updatePushNotificationToken(_ token: String) async {
         let deviceId = UUID()
-
-        pushNotificationToken = token
         do {
             try await rpcClient.call(
                 RefreshDeviceCommand.self,
@@ -103,23 +118,8 @@ class AppModel {
         }
     }
 
-    private func loadStores() async {
-        status = .loading
-        do {
-            stores = try await rpcClient.call(GetStoresCommand.self, with: .init()).stores
-            status = .ready
-        } catch {
-            logger.error("Failed to load stores: \(error.localizedDescription)")
-            self.error = error
-            status = .error(error)
-        }
-    }
-
     var webStoreItems: [BeerEntity] {
-        guard let data else { return [] }
-        return data.webstore.compactMap { key, _ in
-            data.beers[key]
-        }.sorted { ($0.rating ?? 0) > ($1.rating ?? 0) }
+        return []
     }
 
     func getProductsByStoreId(id: UUID) async {

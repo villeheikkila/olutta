@@ -79,19 +79,20 @@ enum UserRepository {
         userId: UUID,
         oldTokenId: UUID,
         newTokenId: UUID,
+        expiresAt: Date,
     ) async throws -> UUID {
         let result = try await connection.query("""
-            UPDATE public.user_devices 
+            UPDATE public.user_refresh_tokens 
             SET 
-                token_id = \(newTokenId)
-                updated_at = NOW(),
-                seen_at = NOW()
-            WHERE token_id = \(oldTokenId) AND user_id = \(userId)
-            RETURNING token_id
+                refresh_token_id = \(newTokenId),
+                expires_at = \(expiresAt),
+                updated_at = NOW()
+            WHERE refresh_token_id = \(oldTokenId) AND user_id = \(userId)
+            RETURNING refresh_token_id
         """, logger: logger)
 
-        for try await (tokenId) in result.decode(UUID.self) {
-            return tokenId
+        for try await (refreshTokenId) in result.decode(UUID.self) {
+            return refreshTokenId
         }
         throw RepositoryError.noData
     }

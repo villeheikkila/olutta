@@ -178,8 +178,14 @@ final class AuthenticatedRPCClient: RPCClientProtocol {
         with request: C.RequestType,
         headers: [HTTPField] = [],
     ) async throws(RPCError) -> C.ResponseType {
-        guard let token = try await authManager.getValidAccessToken() else {
-            throw .notAuthenticated
+        let token: String?
+        do {
+            token = try await authManager.getValidAccessToken()
+        } catch {
+            throw .authError(error)
+        }
+        guard let token else {
+            throw .authError(AuthManagerError.notAuthenticated)
         }
         let authHeader = HTTPField(name: .authorization, value: "Bearer \(token)")
         let headers = [authHeader] + headers
@@ -206,14 +212,15 @@ final class AuthenticatedRPCClient: RPCClientProtocol {
             return try await rpcClient.call(C.self, with: request, headers: [authHeader])
 
         } catch {
-            // if refresh fails, clear session and propagate error
+            // we have already tried once, if refresh fails again, clear session and propagate error
+            // this should happen rarely
             await authManager.handleAuthenticationFailure()
             throw error as? RPCError ?? .tokenRefreshFailed(error)
         }
     }
 }
 
-public enum RPCError: Error, LocalizedError, Sendable {
+enum RPCError: Error, LocalizedError, Sendable {
     case networkError(URLError)
     case httpError(statusCode: Int, data: Data)
     case decodingFailed(Error)
@@ -226,8 +233,9 @@ public enum RPCError: Error, LocalizedError, Sendable {
     case tokenRefreshFailed(Error)
     case clientDeallocated
     case notAuthenticated
+    case authError(AuthManagerError)
 
-    public var errorDescription: String? {
+    var errorDescription: String? {
         switch self {
         case let .networkError(urlError):
             "Network error: \(urlError.localizedDescription)"
@@ -253,6 +261,8 @@ public enum RPCError: Error, LocalizedError, Sendable {
             "RPC client was deallocated during operation"
         case .notAuthenticated:
             "Authentication required but no session found"
+        case let .authError(error):
+            "Authentication error: \(error.localizedDescription)"
         }
     }
 }

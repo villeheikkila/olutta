@@ -2,6 +2,17 @@ import Foundation
 import OluttaShared
 import OSLog
 
+enum AuthStatus: Equatable, Sendable {
+    case authenticated
+    case unauthenticated
+}
+
+enum AuthManagerError: Error {
+    case refreshTokenExpired
+    case notAuthenticated
+    case tokenRefreshFailed(Error)
+}
+
 @Observable
 final class AuthManager {
     private let storage: SessionStorage
@@ -15,7 +26,7 @@ final class AuthManager {
     private let autoRefreshTickDuration: TimeInterval = 10.0
     private let autoRefreshTickThreshold = 3
     // status
-    private(set) var authStatus: AuthStatus = .loading
+    private(set) var authStatus: AuthStatus = .unauthenticated
 
     init(storage: SessionStorage, rpcClient: RPCClientProtocol) {
         self.storage = storage
@@ -23,7 +34,6 @@ final class AuthManager {
     }
 
     func initialize() async {
-        authStatus = .loading
         do {
             if let storedSession = try await storage.load() {
                 if storedSession.isRefreshTokenExpired {
@@ -45,7 +55,8 @@ final class AuthManager {
         }
     }
 
-    func createAnonymousUser() async throws {
+    // public
+    func createAnonymousUser() async throws(RPCError) {
         let response = try await rpcClient.call(
             CreateAnonymousUserCommand.self,
             with: .init(),
@@ -58,6 +69,38 @@ final class AuthManager {
         )
     }
 
+    func logout() async {
+        await clear()
+    }
+
+    func getValidAccessToken() async throws(AuthManagerError) -> String? {
+        guard let session = currentSession else {
+            return nil
+        }
+        if session.isRefreshTokenExpired {
+            await clear()
+            throw AuthManagerError.refreshTokenExpired
+        }
+        if session.isExpired {
+            logger.info("access token expired, needs refresh")
+            return nil
+        }
+        return session.accessToken
+    }
+
+    func forceRefresh() async throws -> TokenSession? {
+        guard let session = currentSession else {
+            throw AuthManagerError.notAuthenticated
+        }
+        return try await refreshSession(session.refreshToken)
+    }
+
+    func handleAuthenticationFailure() async {
+        logger.warning("authentication failure detected, clearing session")
+        await clear()
+    }
+
+    // private
     private func setSession(
         accessToken: String,
         accessTokenExpiresAt: Date,
@@ -82,10 +125,6 @@ final class AuthManager {
         await startAutoRefresh()
     }
 
-    func logout() async {
-        await clear()
-    }
-
     private func clear() async {
         currentSession = nil
         stopAutoRefresh()
@@ -96,37 +135,6 @@ final class AuthManager {
         }
         authStatus = .unauthenticated
         logger.info("session cleared")
-    }
-
-    func getValidAccessToken() async throws(RPCError) -> String? {
-        guard let session = currentSession else {
-            return nil
-        }
-        if session.isRefreshTokenExpired {
-            await clear()
-            throw RPCError.refreshTokenExpired
-        }
-        if session.isExpired {
-            logger.info("access token expired, needs refresh")
-            return nil
-        }
-        return session.accessToken
-    }
-
-    func getCurrentSession() async -> TokenSession? {
-        currentSession
-    }
-
-    func forceRefresh() async throws -> TokenSession? {
-        guard let session = currentSession else {
-            throw RPCError.notAuthenticated
-        }
-        return try await refreshSession(session.refreshToken)
-    }
-
-    func handleAuthenticationFailure() async {
-        logger.warning("authentication failure detected, clearing session")
-        await clear()
     }
 
     private func refreshSession(_ refreshToken: String) async throws -> TokenSession? {
@@ -146,10 +154,10 @@ final class AuthManager {
             } catch {
                 logger.error("token refresh failed: \(error.localizedDescription)")
                 await clear()
-                throw error
+                throw AuthManagerError.tokenRefreshFailed(error)
             }
         }
-        return try await inFlightRefreshTask!.value
+        return try await inFlightRefreshTask?.value
     }
 
     private func performTokenRefresh(refreshToken: String) async throws(RPCError) -> TokenSession {
@@ -208,12 +216,6 @@ struct TokenSession: Sendable, Codable {
     var isRefreshTokenExpired: Bool {
         Date() >= refreshTokenExpiresAt
     }
-}
-
-enum AuthStatus: Equatable, Sendable {
-    case authenticated
-    case unauthenticated
-    case loading
 }
 
 protocol SessionStorage: Sendable {

@@ -21,7 +21,7 @@ public extension UnauthenticatedCommand {
     static var authenticated: Bool { false }
 }
 
-public struct GetStoresCommand: AuthenticatedCommand {
+public struct GetAppData: AuthenticatedCommand {
     public typealias RequestType = Request
     public typealias ResponseType = Response
     public static let name = "get_stores"
