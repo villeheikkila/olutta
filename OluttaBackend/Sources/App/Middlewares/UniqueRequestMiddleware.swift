@@ -24,7 +24,6 @@ public struct UniqueRequestMiddleware<Context: RequestContext>: RouterMiddleware
         do {
             let timestamp = Date().timeIntervalSince1970
             try await persist.create(key: createKey(requestId), value: timestamp)
-            return try await next(request, context)
         } catch let error as PersistError {
             if case .duplicate = error {
                 context.logger.warning("duplicate request ID detected: \(requestId)")
@@ -37,6 +36,7 @@ public struct UniqueRequestMiddleware<Context: RequestContext>: RouterMiddleware
             context.logger.error("error checking request ID: \(error)")
             throw HTTPError(.internalServerError, message: "unable to process request")
         }
+        return try await next(request, context)
     }
 
     private func createKey(_ requestId: String) -> String {

@@ -27,7 +27,7 @@ private func executeUnauthenticated<C: UnauthenticatedCommandExecutable>(
     _: C.Type,
     request: Request,
     context: AppRequestContext,
-    dependencies: UnauthenticatedCommandDependencies
+    dependencies: UnauthenticatedCommandDependencies,
 ) async throws -> Response {
     let requestData = try await request.decode(as: C.RequestType.self, context: context)
     let body = try await C.execute(

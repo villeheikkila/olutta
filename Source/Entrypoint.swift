@@ -41,7 +41,7 @@ struct ContentView: View {
             IntroPage()
         case .ready:
             AuthenticatedState()
-        case .error(let error):
+        case let .error(error):
             Text(error.localizedDescription)
         }
     }

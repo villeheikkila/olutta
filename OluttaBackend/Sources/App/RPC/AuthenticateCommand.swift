@@ -12,7 +12,7 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
         dependencies: UnauthenticatedCommandDependencies,
         request: Request,
     ) async throws -> Response {
-        return try await dependencies.pg.withTransaction { tx in
+        try await dependencies.pg.withTransaction { tx in
             let now = Date()
             // handle authentication provider
             let authResult = try await handleAuthProvider(
@@ -20,7 +20,7 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
                 dependencies: dependencies,
                 tx: tx,
                 logger: logger,
-                now: now
+                now: now,
             )
             // get or create user
             let userId = if let existingUserId = authResult.existingUserId {
@@ -35,7 +35,7 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
                 sub: refreshTokenId,
                 iat: now,
                 exp: refreshTokenExpiry,
-                provider: authResult.refreshTokenProvider
+                provider: authResult.refreshTokenProvider,
             )
             let refreshToken = try await dependencies.jwtKeyCollection.sign(refreshTokenPayload)
             // create access token
@@ -47,7 +47,7 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
                 refreshTokenId: refreshTokenId,
                 iat: now,
                 exp: accessTokenExpiry,
-                provider: authResult.accessTokenProvider
+                provider: authResult.accessTokenProvider,
             )
             let accessToken = try await dependencies.jwtKeyCollection.sign(accessTokenPayload)
             // return response
@@ -55,7 +55,7 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
                 refreshToken: refreshToken,
                 refreshTokenExpiresAt: refreshTokenExpiry,
                 accessToken: accessToken,
-                accessTokenExpiresAt: accessTokenExpiry
+                accessTokenExpiresAt: accessTokenExpiry,
             )
         }
     }
@@ -73,7 +73,7 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
         dependencies: UnauthenticatedCommandDependencies,
         tx: PostgresConnection,
         logger: Logger,
-        now: Date
+        now: Date,
     ) async throws -> AuthProviderResult {
         switch request.authenticationType {
         case let .signInWithApple(payload):
@@ -92,7 +92,7 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
                 provider: .signInWithApple,
                 existingUserId: existingUserId,
                 refreshTokenProvider: .signInWithApple(.init(refreshToken: tokens.refreshToken, expiresAt: refreshTokenExpiresAt)),
-                accessTokenProvider: .signInWithApple(.init(accessToken: tokens.accessToken, expiresAt: accessTokenExpiresAt))
+                accessTokenProvider: .signInWithApple(.init(accessToken: tokens.accessToken, expiresAt: accessTokenExpiresAt)),
             )
         case .anonymous:
             return AuthProviderResult(externalId: nil, provider: .anonymous, existingUserId: nil, refreshTokenProvider: nil, accessTokenProvider: nil)
@@ -102,7 +102,7 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
     private static func createUserWithAuthProvider(
         tx: PostgresConnection,
         logger: Logger,
-        authResult: AuthProviderResult
+        authResult: AuthProviderResult,
     ) async throws -> UUID {
         let newUserId = try await UserRepository.createUser(connection: tx, logger: logger)
         guard let externalId = authResult.externalId else { return newUserId }
@@ -113,7 +113,7 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
             logger: logger,
             userId: newUserId,
             authProvider: authResult.provider,
-            externalId: externalId
+            externalId: externalId,
         )
         if isNew {
             logger.info("new user created using \(authResult.provider.rawValue)")

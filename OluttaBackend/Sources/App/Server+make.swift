@@ -66,7 +66,7 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
         clientId: config.untappdClientId,
         clientSecret: config.untappdClientSecret,
     )
-    let appleService = SignInWithAppleService(logger: logger, httpClient: httpClient, appIdentifier: config.appleBundleId, authenticationMethod: .jwt(pemString: config.applePrivateKey, keyIdentifier: config.appleKeyId, teamIdentifier: config.appleTeamId))
+    let appleService = SignInWithAppleService(logger: logger, httpClient: httpClient, bundleIdentifier: config.appleBundleId, authenticationMethod: .jwt(pemString: config.applePrivateKey, keyIdentifier: config.appleKeyId, teamIdentifier: config.appleTeamId))
     let apnsService = try APNSService(
         privateKey: config.applePrivateKey,
         keyIdentifier: config.appleKeyId,

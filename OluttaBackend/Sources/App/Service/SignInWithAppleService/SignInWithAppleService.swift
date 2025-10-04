@@ -11,18 +11,18 @@ struct SignInWithAppleService: Sendable {
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
 
-    let appIdentifier: String
+    let bundleIdentifier: String
     let authenticationMethod: AuthenticationMethod
 
     init(
-        logger: Logger = Logger(label: "AppleService"),
+        logger: Logger = Logger(label: "SignInWithAppleService"),
         httpClient: HTTPClient,
-        appIdentifier: String,
-        authenticationMethod: AuthenticationMethod
+        bundleIdentifier: String,
+        authenticationMethod: AuthenticationMethod,
     ) {
         self.logger = logger
         self.httpClient = httpClient
-        self.appIdentifier = appIdentifier
+        self.bundleIdentifier = bundleIdentifier
         self.authenticationMethod = authenticationMethod
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
@@ -36,15 +36,14 @@ struct SignInWithAppleService: Sendable {
         case jwt(
             pemString: String,
             keyIdentifier: String,
-            teamIdentifier: String
+            teamIdentifier: String,
         )
-
         func generateClientSecret(for clientId: String) async throws -> String {
             switch self {
             case let .jwt(pemString, keyIdentifier, teamIdentifier):
                 let authToken = AppleAuthToken(
                     clientId: clientId,
-                    teamId: teamIdentifier
+                    teamId: teamIdentifier,
                 )
                 let keys = JWTKeyCollection()
                 let ecdsaKey = try ES256PrivateKey(pem: pemString)
@@ -60,10 +59,10 @@ struct SignInWithAppleService: Sendable {
         request.method = .POST
         request.headers.add(name: "Content-Type", value: "application/x-www-form-urlencoded")
         // client secret
-        let clientSecret = try await authenticationMethod.generateClientSecret(for: appIdentifier)
+        let clientSecret = try await authenticationMethod.generateClientSecret(for: bundleIdentifier)
         // form data
         var formItems: [(String, String)] = []
-        formItems.append(("client_id", appIdentifier))
+        formItems.append(("client_id", bundleIdentifier))
         formItems.append(("client_secret", clientSecret))
         formItems.append(("grant_type", type: type.grantType))
         if case let .authorizationCode(code) = type {
@@ -116,7 +115,7 @@ struct SignInWithAppleService: Sendable {
             throw SignInWithAppleServiceError.invalidNonce
         }
         // audience
-        try payload.aud.verifyIntendedAudience(includes: appIdentifier)
+        try payload.aud.verifyIntendedAudience(includes: bundleIdentifier)
         // issuer
         guard payload.iss.value == "https://appleid.apple.com" else {
             throw SignInWithAppleServiceError.invalidIssuer
@@ -144,8 +143,8 @@ struct SignInWithAppleService: Sendable {
 
         var grantType: String {
             switch self {
-            case .authorizationCode: return "authorization_code"
-            case .refreshToken: return "refresh_token"
+            case .authorizationCode: "authorization_code"
+            case .refreshToken: "refresh_token"
             }
         }
     }
@@ -162,17 +161,17 @@ enum SignInWithAppleServiceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .invalidNonce:
-            return "The nonce in the identity token does not match the expected nonce"
+            "The nonce in the identity token does not match the expected nonce"
         case .invalidIssuer:
-            return "The issuer of the identity token is not Apple"
+            "The issuer of the identity token is not Apple"
         case .failedToFetchPublicKeys:
-            return "Failed to fetch Apple's public keys"
+            "Failed to fetch Apple's public keys"
         case let .appleError(error):
-            return "Apple returned an error: \(error)"
+            "apple returned an error: \(error)"
         case .unexpectedResponse:
-            return "Unexpected response from Apple"
+            "Unexpected response from Apple"
         case .failedToEncodeRequest:
-            return "Failed to encode the token request"
+            "Failed to encode the token request"
         }
     }
 }
@@ -216,11 +215,11 @@ struct AppleAuthToken: JWTPayload {
     let sub: SubjectClaim
 
     init(clientId: String, teamId: String) {
-        self.iss = IssuerClaim(value: teamId)
-        self.iat = IssuedAtClaim(value: Date())
-        self.exp = ExpirationClaim(value: Date().addingTimeInterval(15777000))
-        self.aud = AudienceClaim(value: "https://appleid.apple.com")
-        self.sub = SubjectClaim(value: clientId)
+        iss = IssuerClaim(value: teamId)
+        iat = IssuedAtClaim(value: Date())
+        exp = ExpirationClaim(value: Date().addingTimeInterval(15_777_000))
+        aud = AudienceClaim(value: "https://appleid.apple.com")
+        sub = SubjectClaim(value: clientId)
     }
 
     func verify(using _: some JWTAlgorithm) throws {

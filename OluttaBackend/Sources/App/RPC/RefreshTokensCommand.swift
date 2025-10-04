@@ -16,7 +16,7 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
         let payload = try await verifyRefreshToken(
             refreshToken: request.refreshToken,
             jwtKeyCollection: dependencies.jwtKeyCollection,
-            logger: logger
+            logger: logger,
         )
         return try await dependencies.pg.withTransaction { tx in
             // check that refresh token has not been revoked
@@ -34,7 +34,7 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
             let authProviders = try await refreshAuthProviderTokens(
                 payload: payload,
                 dependencies: dependencies,
-                now: now
+                now: now,
             )
             // create new refresh token
             let refreshTokenExpiry = payload.exp // do not extend the refresh token exp period, we only want to use up the old token
@@ -45,13 +45,13 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
                 userId: refreshTokenVerificationRow.userId,
                 oldTokenId: payload.sub,
                 newTokenId: newRefreshTokenId,
-                expiresAt: refreshTokenExpiry
+                expiresAt: refreshTokenExpiry,
             )
             let refreshTokenPayload = RefreshTokenPayload(
                 sub: refreshTokenId,
                 iat: now,
                 exp: refreshTokenExpiry,
-                provider: authProviders.refreshTokenProvider
+                provider: authProviders.refreshTokenProvider,
             )
             let refreshToken = try await dependencies.jwtKeyCollection.sign(refreshTokenPayload)
             // create new access token
@@ -63,7 +63,7 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
                 refreshTokenId: newRefreshTokenId,
                 iat: now,
                 exp: accessTokenExpiry,
-                provider: authProviders.accessTokenProvider
+                provider: authProviders.accessTokenProvider,
             )
             let accessToken = try await dependencies.jwtKeyCollection.sign(accessTokenPayload)
             // return response
@@ -71,7 +71,7 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
                 accessToken: accessToken,
                 accessTokenExpiresAt: accessTokenExpiry,
                 refreshToken: refreshToken,
-                refreshTokenExpiresAt: refreshTokenExpiry
+                refreshTokenExpiresAt: refreshTokenExpiry,
             )
         }
     }
@@ -79,7 +79,7 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
     private static func verifyRefreshToken(
         refreshToken: String,
         jwtKeyCollection: JWTKeyCollection,
-        logger: Logger
+        logger: Logger,
     ) async throws -> RefreshTokenPayload {
         do {
             return try await jwtKeyCollection.verify(refreshToken, as: RefreshTokenPayload.self)
@@ -97,7 +97,7 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
     private static func refreshAuthProviderTokens(
         payload: RefreshTokenPayload,
         dependencies: UnauthenticatedCommandDependencies,
-        now: Date
+        now: Date,
     ) async throws -> AuthProviders {
         switch payload.provider {
         case let .signInWithApple(claims):
@@ -106,7 +106,7 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
             let refreshTokenExpiresAt = now.addingTimeInterval(180 * 24 * 60 * 60) // 6 months - each refresh extends the expiry
             return AuthProviders(
                 refreshTokenProvider: .signInWithApple(.init(refreshToken: tokens.refreshToken, expiresAt: refreshTokenExpiresAt)),
-                accessTokenProvider: .signInWithApple(.init(accessToken: tokens.accessToken, expiresAt: accessTokenExpiresAt))
+                accessTokenProvider: .signInWithApple(.init(accessToken: tokens.accessToken, expiresAt: accessTokenExpiresAt)),
             )
         case .none:
             return AuthProviders(refreshTokenProvider: nil, accessTokenProvider: nil)

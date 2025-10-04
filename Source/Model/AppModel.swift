@@ -41,7 +41,7 @@ class AppModel {
     let authManager: AuthManager
     let rpcClient: AuthenticatedRPCClient
 
-    init(rpcClient: RPCClientProtocol, keychain: Keychain) {
+    init(rpcClient: RPCClientProtocol, keychain _: Keychain) {
         // initialize session storage
         let sessionStorage = KeychainSessionStorage(
             service: Bundle.main.bundleIdentifier ?? "com.bytesized.solutions.olutta",

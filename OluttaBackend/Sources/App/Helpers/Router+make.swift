@@ -13,10 +13,10 @@ struct UnauthenticatedCommandDependencies {
     let appleService: SignInWithAppleService
 }
 
-func makeRouter(pg: PostgresClient, persist: RedisPersistDriver, jwtKeyCollection: JWTKeyCollection, requestSignatureSalt: String, appleService: SignInWithAppleService) -> Router<AppRequestContext> {
+func makeRouter(pg: PostgresClient, persist: RedisPersistDriver, jwtKeyCollection: JWTKeyCollection, requestSignatureSalt _: String, appleService: SignInWithAppleService) -> Router<AppRequestContext> {
     let router = Router(context: AppRequestContext.self)
     router.addMiddleware {
-        LogRequestsMiddleware(.info)
+        LogRequestsMiddleware(.trace)
         // RequestSignatureMiddleware(secretKey: requestSignatureSalt)
         UniqueRequestMiddleware(persist: persist)
     }

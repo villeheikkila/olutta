@@ -15,7 +15,7 @@ struct AccessTokenPayload: JWTPayload, Codable {
         refreshTokenId: UUID,
         iat: Date,
         exp: Date,
-        provider: AuthProvider? = nil
+        provider: AuthProvider? = nil,
     ) {
         self.sub = sub
         self.userId = userId
@@ -54,7 +54,7 @@ struct RefreshTokenPayload: JWTPayload, Codable {
         sub: UUID,
         iat: Date,
         exp: Date,
-        provider: AuthProvider? = nil
+        provider: AuthProvider? = nil,
     ) {
         self.sub = sub
         self.iat = iat
