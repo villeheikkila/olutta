@@ -18,6 +18,8 @@ import ServiceLifecycle
 typealias AppRequestContext = BasicAuthRequestContext<UserIdentity>
 
 func makeServer(config: Config) async throws -> some ApplicationProtocol {
+    // utils
+    let decoder = JSONDecoder()
     // logger
     let logger = makeLogger(
         label: config.serverName,
@@ -66,7 +68,7 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
         clientId: config.untappdClientId,
         clientSecret: config.untappdClientSecret,
     )
-    let appleService = SignInWithAppleService(logger: logger, httpClient: httpClient, bundleIdentifier: config.appleBundleId, authenticationMethod: .jwt(pemString: config.applePrivateKey, keyIdentifier: config.appleKeyId, teamIdentifier: config.appleTeamId))
+    let appleService = try await SignInWithAppleService(logger: logger, httpClient: httpClient, decoder: decoder, bundleIdentifier: config.appleBundleId, teamIdentifier: config.appleTeamId, privateKeyId: config.appleKeyId, privateKey: config.applePrivateKey)
     let apnsService = try APNSService(
         privateKey: config.applePrivateKey,
         keyIdentifier: config.appleKeyId,

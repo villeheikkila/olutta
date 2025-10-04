@@ -8,7 +8,7 @@ struct Entrypoint: App {
 
     init() {
         let rpcClient = RPCClient(
-            baseURL: URL(string: "http://localhost:3000")!,
+            baseURL: URL(string: "https://ade366dd4631.ngrok-free.app")!,
             secretKey: "a1b2c3d4e5f6g7h8i9j0k",
             rpcPath: "/v1/rpc",
         )

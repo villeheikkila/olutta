@@ -9,48 +9,32 @@ struct SignInWithAppleService: Sendable {
     private let logger: Logger
     private let httpClient: HTTPClient
     private let decoder: JSONDecoder
-    private let encoder: JSONEncoder
 
     let bundleIdentifier: String
-    let authenticationMethod: AuthenticationMethod
+    let clientSecret: String
 
     init(
         logger: Logger = Logger(label: "SignInWithAppleService"),
         httpClient: HTTPClient,
+        decoder: JSONDecoder,
         bundleIdentifier: String,
-        authenticationMethod: AuthenticationMethod,
-    ) {
+        teamIdentifier: String,
+        privateKeyId: String,
+        privateKey: String,
+    ) async throws {
         self.logger = logger
         self.httpClient = httpClient
         self.bundleIdentifier = bundleIdentifier
-        self.authenticationMethod = authenticationMethod
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
         self.decoder = decoder
-        let encoder = JSONEncoder()
-        encoder.keyEncodingStrategy = .convertToSnakeCase
-        self.encoder = encoder
-    }
-
-    enum AuthenticationMethod: Sendable {
-        case jwt(
-            pemString: String,
-            keyIdentifier: String,
-            teamIdentifier: String,
+        // create client secret
+        let authToken = AppleAuthToken(
+            clientId: bundleIdentifier,
+            teamId: teamIdentifier,
         )
-        func generateClientSecret(for clientId: String) async throws -> String {
-            switch self {
-            case let .jwt(pemString, keyIdentifier, teamIdentifier):
-                let authToken = AppleAuthToken(
-                    clientId: clientId,
-                    teamId: teamIdentifier,
-                )
-                let keys = JWTKeyCollection()
-                let ecdsaKey = try ES256PrivateKey(pem: pemString)
-                await keys.add(ecdsa: ecdsaKey, kid: JWKIdentifier(string: keyIdentifier))
-                return try await keys.sign(authToken, kid: JWKIdentifier(string: keyIdentifier))
-            }
-        }
+        let keys = JWTKeyCollection()
+        let ecdsaKey = try ES256PrivateKey(pem: privateKey)
+        await keys.add(ecdsa: ecdsaKey, kid: JWKIdentifier(string: privateKeyId))
+        clientSecret = try await keys.sign(authToken, kid: JWKIdentifier(string: privateKeyId))
     }
 
     func sendTokenRequest(type: GrantType) async throws -> SignInWithAppleTokenResponse {
@@ -58,8 +42,6 @@ struct SignInWithAppleService: Sendable {
         var request = HTTPClientRequest(url: "https://appleid.apple.com/auth/token")
         request.method = .POST
         request.headers.add(name: "Content-Type", value: "application/x-www-form-urlencoded")
-        // client secret
-        let clientSecret = try await authenticationMethod.generateClientSecret(for: bundleIdentifier)
         // form data
         var formItems: [(String, String)] = []
         formItems.append(("client_id", bundleIdentifier))
@@ -99,14 +81,17 @@ struct SignInWithAppleService: Sendable {
 
     @discardableResult
     func verifyIdToken(idToken: String, nonce: String) async throws -> AppleIdentityToken {
+        // obtain apple public key
         let appleKeys = try await getPublicKeys()
         let appleJWTKeys = JWTKeyCollection()
         try await appleJWTKeys.add(jwks: appleKeys)
+        // verify jwt
         let payload = try await appleJWTKeys.verify(idToken, as: AppleIdentityToken.self)
         // nonce
         guard let nonceData = nonce.data(using: .utf8) else {
             throw SignInWithAppleServiceError.invalidNonce
         }
+        // apple returns hashed nonce, hash for comparison
         let hashedNonce = SHA256.hash(data: nonceData)
         let hashedNonceString = hashedNonce.compactMap {
             String(format: "%02x", $0)
@@ -150,30 +135,13 @@ struct SignInWithAppleService: Sendable {
     }
 }
 
-enum SignInWithAppleServiceError: Error, CustomStringConvertible {
+enum SignInWithAppleServiceError: Error {
     case invalidNonce
     case invalidIssuer
     case failedToFetchPublicKeys
     case appleError(String)
     case unexpectedResponse
     case failedToEncodeRequest
-
-    var description: String {
-        switch self {
-        case .invalidNonce:
-            "The nonce in the identity token does not match the expected nonce"
-        case .invalidIssuer:
-            "The issuer of the identity token is not Apple"
-        case .failedToFetchPublicKeys:
-            "Failed to fetch Apple's public keys"
-        case let .appleError(error):
-            "apple returned an error: \(error)"
-        case .unexpectedResponse:
-            "Unexpected response from Apple"
-        case .failedToEncodeRequest:
-            "Failed to encode the token request"
-        }
-    }
 }
 
 struct AppleIdentityToken: JWTPayload, Sendable {
@@ -201,6 +169,14 @@ struct SignInWithAppleTokenResponse: Codable, Sendable {
     let idToken: String?
     let refreshToken: String
     let tokenType: String
+
+    enum CodingKeys: String, CodingKey {
+        case accessToken = "access_token"
+        case expiresIn = "expires_in"
+        case idToken = "id_token"
+        case refreshToken = "refresh_token"
+        case tokenType = "token_type"
+    }
 }
 
 struct AppleErrorResponse: Codable, Sendable {
@@ -217,7 +193,7 @@ struct AppleAuthToken: JWTPayload {
     init(clientId: String, teamId: String) {
         iss = IssuerClaim(value: teamId)
         iat = IssuedAtClaim(value: Date())
-        exp = ExpirationClaim(value: Date().addingTimeInterval(15_777_000))
+        exp = ExpirationClaim(value: Date().addingTimeInterval(15777000))
         aud = AudienceClaim(value: "https://appleid.apple.com")
         sub = SubjectClaim(value: clientId)
     }
