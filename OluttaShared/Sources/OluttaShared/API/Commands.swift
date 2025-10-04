@@ -1,61 +1,30 @@
 import Foundation
 import HTTPTypes
 
-public enum AuthenticatedCommand: String, Sendable, CaseIterable {
-    case refreshDevice = "refresh_device"
-    case getUser = "get_user"
-    case subscribeToStore = "subscribe_to_store"
-    case unsubscribeFromStore = "unsusbscribe_from_store"
-    case getStores = "get_stores"
-    case getProductsByStoreId = "get_products_by_store_id"
-}
-
-public enum UnauthenticatedCommand: String, Sendable, CaseIterable {
-    case refreshAccessToken = "refresh_access_token"
-    case createAnonymousUser = "create_anonymous_user"
-}
-
-public enum Command: Sendable {
-    case authenticated(AuthenticatedCommand)
-    case unauthenticated(UnauthenticatedCommand)
-
-    public init?(from string: String) {
-        if let authenticatedCommand = AuthenticatedCommand(rawValue: string) {
-            self = .authenticated(authenticatedCommand)
-        } else if let unauthenticatedCommand = UnauthenticatedCommand(rawValue: string) {
-            self = .unauthenticated(unauthenticatedCommand)
-        } else {
-            return nil
-        }
-    }
-
-    public var commandName: String {
-        switch self {
-        case let .authenticated(command):
-            command.rawValue
-        case let .unauthenticated(command):
-            command.rawValue
-        }
-    }
-}
-
 public protocol CommandMetadata {
     associatedtype RequestType: Codable
     associatedtype ResponseType: Codable
 
-    static var name: Command { get }
+    static var name: String { get }
+    static var authenticated: Bool { get }
 }
 
-public extension CommandMetadata {
-    var command: String {
-        Self.name.commandName
-    }
+public protocol AuthenticatedCommand: CommandMetadata {}
+
+public extension AuthenticatedCommand {
+    static var authenticated: Bool { true }
 }
 
-public struct GetStoresCommand: CommandMetadata {
+public protocol UnauthenticatedCommand: CommandMetadata {}
+
+public extension UnauthenticatedCommand {
+    static var authenticated: Bool { false }
+}
+
+public struct GetStoresCommand: AuthenticatedCommand {
     public typealias RequestType = Request
     public typealias ResponseType = Response
-    public static let name = Command.authenticated(.getStores)
+    public static let name = "get_stores"
 
     public struct Request: Codable, Sendable {
         public init() {}
@@ -70,10 +39,10 @@ public struct GetStoresCommand: CommandMetadata {
     }
 }
 
-public struct GetProductsByStoreIdCommand: CommandMetadata {
+public struct GetProductsByStoreIdCommand: AuthenticatedCommand {
     public typealias RequestType = Request
     public typealias ResponseType = Response
-    public static let name = Command.authenticated(.getProductsByStoreId)
+    public static let name = "get_products_by_store_id"
 
     public struct Request: Codable, Sendable {
         public let storeId: UUID
@@ -92,10 +61,10 @@ public struct GetProductsByStoreIdCommand: CommandMetadata {
     }
 }
 
-public struct RefreshDeviceCommand: CommandMetadata {
+public struct RefreshDeviceCommand: AuthenticatedCommand {
     public typealias RequestType = Request
     public typealias ResponseType = Response
-    public static let name = Command.authenticated(.refreshDevice)
+    public static let name = "refresh_device"
 
     public struct Response: Codable, Sendable {
         public init() {}
@@ -112,10 +81,10 @@ public struct RefreshDeviceCommand: CommandMetadata {
     }
 }
 
-public struct GetUserCommand: CommandMetadata {
+public struct GetUserCommand: AuthenticatedCommand {
     public typealias RequestType = Request
     public typealias ResponseType = Response
-    public static let name = Command.authenticated(.getUser)
+    public static let name = "get_user"
 
     public struct Request: Codable, Sendable {
         public init() {}
@@ -140,10 +109,10 @@ public struct GetUserCommand: CommandMetadata {
     }
 }
 
-public struct SubscribeToStoreCommand: CommandMetadata {
+public struct SubscribeToStoreCommand: AuthenticatedCommand {
     public typealias RequestType = Request
     public typealias ResponseType = Response
-    public static let name = Command.authenticated(.subscribeToStore)
+    public static let name = "subscribe_to_store"
 
     public struct Request: Codable, Sendable {
         public let storeId: UUID
@@ -160,10 +129,10 @@ public struct SubscribeToStoreCommand: CommandMetadata {
     }
 }
 
-public struct UnsubscribeFromStoreCommand: CommandMetadata {
+public struct UnsubscribeFromStoreCommand: AuthenticatedCommand {
     public typealias RequestType = Request
     public typealias ResponseType = Response
-    public static let name = Command.authenticated(.unsubscribeFromStore)
+    public static let name = "unsusbscribe_from_store"
 
     public struct Request: Codable, Sendable {
         public let storeId: UUID
@@ -180,11 +149,10 @@ public struct UnsubscribeFromStoreCommand: CommandMetadata {
     }
 }
 
-public struct RefreshTokensCommand: CommandMetadata {
+public struct RefreshTokensCommand: UnauthenticatedCommand {
     public typealias RequestType = Request
     public typealias ResponseType = Response
-    public static let name = Command.unauthenticated(.refreshAccessToken)
-    public static let authenticated = false
+    public static let name = "refresh_access_token"
 
     public struct Request: Codable, Sendable {
         public let refreshToken: String
@@ -209,11 +177,10 @@ public struct RefreshTokensCommand: CommandMetadata {
     }
 }
 
-public struct CreateAnonymousUserCommand: CommandMetadata {
+public struct CreateAnonymousUserCommand: UnauthenticatedCommand {
     public typealias RequestType = Request
     public typealias ResponseType = Response
-    public static let name = Command.unauthenticated(.createAnonymousUser)
-    public static let authenticated = false
+    public static let name = "create_anonymous_user"
 
     public struct Request: Codable, Sendable {
         public init() {}

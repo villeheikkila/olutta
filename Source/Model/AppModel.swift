@@ -32,7 +32,6 @@ class AppModel {
     let logger = Logger(subsystem: "", category: "AppModel")
     // auth
     var status: Status = .unauthenticated
-    var isAuthenticated: Bool = false
     var pushNotificationToken: String?
     private var accessToken: String?
     // app
@@ -57,23 +56,21 @@ class AppModel {
     // deps
     private let keychain: Keychain
     let authManager: AuthManager
-    let rpcClient: RPCClientProtocol
-    let arpcClient: AuthenticatedRPCClient
+    let rpcClient: AuthenticatedRPCClient
 
     init(rpcClient: RPCClientProtocol, keychain: Keychain) {
         self.keychain = keychain
         // initialize session storage
         let sessionStorage = KeychainSessionStorage(
             service: Bundle.main.bundleIdentifier ?? "com.olutta.app",
-            key: "token_session"
+            key: "token_session",
         )
         // auth
-        self.authManager = AuthManager(storage: sessionStorage, rpcClient: rpcClient)
+        authManager = AuthManager(storage: sessionStorage, rpcClient: rpcClient)
         // rpc
-        self.rpcClient = rpcClient
-        self.arpcClient = AuthenticatedRPCClient(
+        self.rpcClient = AuthenticatedRPCClient(
             rpcClient: rpcClient,
-            authManager: authManager
+            authManager: authManager,
         )
     }
 
@@ -82,22 +79,9 @@ class AppModel {
     }
 
     func createAnonymousUser() async {
-        let deviceId = UUID()
         status = .authenticating
-
         do {
-            let response = try await rpcClient.call(
-                CreateAnonymousUserCommand.self,
-                with: .init(deviceId: deviceId, pushNotificationToken: pushNotificationToken),
-            )
-            await authManager.setSession(
-                accessToken: response.accessToken,
-                accessTokenExpiresAt: response.accessTokenExpiresAt,
-                refreshToken: response.refreshToken,
-                refreshTokenExpiresAt: response.refreshTokenExpiresAt,
-            )
-            accessToken = response.accessToken
-            isAuthenticated = true
+            try await authManager.createAnonymousUser()
             status = .loading
         } catch {
             logger.error("Failed to create anonymous user: \(error)")
@@ -106,16 +90,16 @@ class AppModel {
     }
 
     func updatePushNotificationToken(_ token: String) async {
+        let deviceId = UUID()
+
         pushNotificationToken = token
-        if isAuthenticated {
-            do {
-                try await rpcClient.call(
-                    RefreshDeviceCommand.self,
-                    with: .init(pushNotificationToken: token),
-                )
-            } catch {
-                logger.error("Failed to update push notification token: \(error)")
-            }
+        do {
+            try await rpcClient.call(
+                RefreshDeviceCommand.self,
+                with: .init(pushNotificationToken: token, deviceId: deviceId),
+            )
+        } catch {
+            logger.error("Failed to update push notification token: \(error)")
         }
     }
 
@@ -192,12 +176,13 @@ class AppModel {
 
     func toggleSubscription() async throws {
         guard let selectedStore else { return }
+        let deviceId = UUID()
 
         if subscribedStoreIds.contains(selectedStore.id) {
             do {
                 try await rpcClient.call(
                     UnsubscribeFromStoreCommand.self,
-                    with: .init(storeId: selectedStore.id),
+                    with: .init(storeId: selectedStore.id, deviceId: deviceId),
                 )
                 subscribedStoreIds = subscribedStoreIds.filter { $0 != selectedStore.id }
             } catch {
@@ -208,7 +193,7 @@ class AppModel {
             do {
                 try await rpcClient.call(
                     SubscribeToStoreCommand.self,
-                    with: .init(storeId: selectedStore.id),
+                    with: .init(storeId: selectedStore.id, deviceId: deviceId),
                 )
                 subscribedStoreIds.append(selectedStore.id)
             } catch {

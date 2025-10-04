@@ -21,7 +21,7 @@ enum UserRepository {
         connection: PostgresConnection,
         logger: Logger,
         userId: UUID,
-        expiresAt: Date
+        expiresAt: Date,
     ) async throws -> UUID {
         let result = try await connection.query("""
             INSERT INTO public.user_refresh_tokens (user_id, expires_at)
@@ -38,7 +38,7 @@ enum UserRepository {
     static func getRefreshTokenById(
         connection: PostgresConnection,
         refreshTokenId: UUID,
-        logger: Logger
+        logger: Logger,
     ) async throws -> (userId: UUID, deviceId: Int)? {
         let result = try await connection.query("""
             SELECT user_id

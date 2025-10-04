@@ -9,7 +9,8 @@ protocol RPCClientProtocol {
     func call<C: CommandMetadata>(
         _ commandType: C.Type,
         with request: C.RequestType,
-        headers: [HTTPField]
+        headers: [HTTPField],
+        authenticated: Bool,
     ) async throws(RPCError) -> C.ResponseType
 }
 
@@ -18,9 +19,10 @@ extension RPCClientProtocol {
     func call<C: CommandMetadata>(
         _ commandType: C.Type,
         with request: C.RequestType,
-        headers: [HTTPField] = []
+        headers: [HTTPField] = [],
+        authenticated: Bool = false,
     ) async throws(RPCError) -> C.ResponseType {
-        try await call(commandType, with: request, headers: headers)
+        try await call(commandType, with: request, headers: headers, authenticated: authenticated)
     }
 }
 
@@ -39,7 +41,7 @@ final class RPCClient: RPCClientProtocol {
         secretKey: String,
         rpcPath: String = "/v1/rpc",
         defaultHeaders: [HTTPField] = [],
-        session: URLSession = .shared
+        session: URLSession = .shared,
     ) {
         logger = Logger(subsystem: "", category: "RPCClient")
         self.baseURL = baseURL
@@ -55,12 +57,13 @@ final class RPCClient: RPCClientProtocol {
     func call<C: CommandMetadata>(
         _: C.Type,
         with request: C.RequestType,
-        headers: [HTTPField] = []
+        headers: [HTTPField] = [],
+        authenticated: Bool = false,
     ) async throws(RPCError) -> C.ResponseType {
         try await post(
-            path: "\(rpcPath)/\(C.name.commandName)",
+            path: "\(rpcPath)/\(C.name)" + (authenticated ? "" : "/unauthenticated"),
             body: request,
-            headers: headers
+            headers: headers,
         )
     }
 
@@ -68,13 +71,13 @@ final class RPCClient: RPCClientProtocol {
         path: String,
         body: (some Encodable)? = nil,
         queryItems: [URLQueryItem]? = nil,
-        headers: [HTTPField] = []
+        headers: [HTTPField] = [],
     ) async throws(RPCError) -> T {
         let startTime = Date()
 
         guard let urlComponents = URLComponents(
             url: baseURL.appendingPathComponent(path),
-            resolvingAgainstBaseURL: true
+            resolvingAgainstBaseURL: true,
         ) else {
             throw .invalidURL(path)
         }
@@ -117,7 +120,7 @@ final class RPCClient: RPCClientProtocol {
                 authority: nil,
                 path: path,
                 headers: httpFields,
-                body: bodyData
+                body: bodyData,
             )
         } catch {
             throw .signatureFailed(error)
@@ -131,7 +134,7 @@ final class RPCClient: RPCClientProtocol {
             scheme: url.scheme,
             authority: authority,
             path: path + (components.query.map { "?\($0)" } ?? ""),
-            headerFields: httpFields
+            headerFields: httpFields,
         )
         let data: Data
         let response: HTTPResponse
@@ -173,7 +176,7 @@ final class AuthenticatedRPCClient: RPCClientProtocol {
     func call<C: CommandMetadata>(
         _: C.Type,
         with request: C.RequestType,
-        headers: [HTTPField] = []
+        headers: [HTTPField] = [],
     ) async throws(RPCError) -> C.ResponseType {
         guard let token = try await authManager.getValidAccessToken() else {
             throw .notAuthenticated
@@ -181,7 +184,7 @@ final class AuthenticatedRPCClient: RPCClientProtocol {
         let authHeader = HTTPField(name: .authorization, value: "Bearer \(token)")
         let headers = [authHeader] + headers
         do {
-            return try await rpcClient.call(C.self, with: request, headers: headers)
+            return try await rpcClient.call(C.self, with: request, headers: headers, authenticated: true)
         } catch RPCError.httpError(statusCode: 401, _) {
             logger.info("401, attempting token refresh and retry")
             return try await handleUnauthorizedAndRetry(C.self, with: request)
@@ -190,7 +193,7 @@ final class AuthenticatedRPCClient: RPCClientProtocol {
 
     private func handleUnauthorizedAndRetry<C: CommandMetadata>(
         _: C.Type,
-        with request: C.RequestType
+        with request: C.RequestType,
     ) async throws(RPCError) -> C.ResponseType {
         do {
             // attempt to refresh the token

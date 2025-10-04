@@ -6,7 +6,7 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
-extension RefreshTokensCommand: UnauthenticatedCommand {
+extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
         pg: PostgresClient,

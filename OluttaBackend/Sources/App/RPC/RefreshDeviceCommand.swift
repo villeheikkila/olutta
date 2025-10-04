@@ -3,7 +3,7 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
-extension RefreshDeviceCommand: AuthenticatedCommand {
+extension RefreshDeviceCommand: AuthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
         identity: UserIdentity,

@@ -3,7 +3,7 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
-extension UnsubscribeFromStoreCommand: AuthenticatedCommand {
+extension UnsubscribeFromStoreCommand: AuthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
         identity: UserIdentity,

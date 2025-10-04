@@ -34,13 +34,6 @@ struct AddUserRefreshTokensMigration: DatabaseMigration {
 
         try await connection.query(
             """
-            CREATE INDEX IF NOT EXISTS idx_user_refresh_tokens_device_id ON public.user_refresh_tokens(device_id);
-            """,
-            logger: logger,
-        )
-
-        try await connection.query(
-            """
             CREATE INDEX IF NOT EXISTS idx_user_refresh_tokens_expires_at ON public.user_refresh_tokens(expires_at);
             """,
             logger: logger,
@@ -71,5 +64,5 @@ struct AddUserRefreshTokensMigration: DatabaseMigration {
         )
     }
 
-    func revert(connection: PostgresConnection, logger: Logger) async throws {}
+    func revert(connection _: PostgresConnection, logger _: Logger) async throws {}
 }

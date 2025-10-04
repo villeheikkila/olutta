@@ -16,12 +16,12 @@ final class AuthManager {
     private let autoRefreshTickThreshold = 3
     // status
     private(set) var authStatus: AuthStatus = .loading
-    
+
     init(storage: SessionStorage, rpcClient: RPCClientProtocol) {
         self.storage = storage
         self.rpcClient = rpcClient
     }
-        
+
     func initialize() async {
         authStatus = .loading
         do {
@@ -44,18 +44,31 @@ final class AuthManager {
             authStatus = .unauthenticated
         }
     }
-    
-    func setSession(
+
+    func createAnonymousUser() async throws {
+        let response = try await rpcClient.call(
+            CreateAnonymousUserCommand.self,
+            with: .init(),
+        )
+        await setSession(
+            accessToken: response.accessToken,
+            accessTokenExpiresAt: response.accessTokenExpiresAt,
+            refreshToken: response.refreshToken,
+            refreshTokenExpiresAt: response.refreshTokenExpiresAt,
+        )
+    }
+
+    private func setSession(
         accessToken: String,
         accessTokenExpiresAt: Date,
         refreshToken: String,
-        refreshTokenExpiresAt: Date
+        refreshTokenExpiresAt: Date,
     ) async {
         let session = TokenSession(
             accessToken: accessToken,
             accessTokenExpiresAt: accessTokenExpiresAt,
             refreshToken: refreshToken,
-            refreshTokenExpiresAt: refreshTokenExpiresAt
+            refreshTokenExpiresAt: refreshTokenExpiresAt,
         )
         currentSession = session
         do {
@@ -68,11 +81,11 @@ final class AuthManager {
         }
         await startAutoRefresh()
     }
-    
+
     func logout() async {
         await clear()
     }
-    
+
     private func clear() async {
         currentSession = nil
         stopAutoRefresh()
@@ -84,7 +97,7 @@ final class AuthManager {
         authStatus = .unauthenticated
         logger.info("session cleared")
     }
-        
+
     func getValidAccessToken() async throws(RPCError) -> String? {
         guard let session = currentSession else {
             return nil
@@ -99,23 +112,23 @@ final class AuthManager {
         }
         return session.accessToken
     }
-    
+
     func getCurrentSession() async -> TokenSession? {
         currentSession
     }
-        
+
     func forceRefresh() async throws -> TokenSession? {
         guard let session = currentSession else {
             throw RPCError.notAuthenticated
         }
         return try await refreshSession(session.refreshToken)
     }
-    
+
     func handleAuthenticationFailure() async {
         logger.warning("authentication failure detected, clearing session")
         await clear()
     }
-    
+
     private func refreshSession(_ refreshToken: String) async throws -> TokenSession? {
         if let inFlightRefreshTask {
             logger.info("refresh already in progress, waiting...")
@@ -138,39 +151,39 @@ final class AuthManager {
         }
         return try await inFlightRefreshTask!.value
     }
-    
+
     private func performTokenRefresh(refreshToken: String) async throws(RPCError) -> TokenSession {
         let refreshRequest = RefreshTokensCommand.RequestType(refreshToken: refreshToken)
         let response: RefreshTokensCommand.ResponseType = try await rpcClient.call(
             RefreshTokensCommand.self,
-            with: refreshRequest
+            with: refreshRequest,
         )
         return TokenSession(
             accessToken: response.accessToken,
             accessTokenExpiresAt: response.accessTokenExpiresAt,
             refreshToken: response.refreshToken,
-            refreshTokenExpiresAt: response.refreshTokenExpiresAt
+            refreshTokenExpiresAt: response.refreshTokenExpiresAt,
         )
     }
-        
+
     private func startAutoRefresh() async {
         autoRefreshTask?.cancel()
         autoRefreshTask = Task { [weak self] in
             guard let self else { return }
             logger.info("auto-refresh started")
             while !Task.isCancelled {
-                await self.autoRefreshTick()
-                try? await Task.sleep(for: .seconds(self.autoRefreshTickDuration))
+                await autoRefreshTick()
+                try? await Task.sleep(for: .seconds(autoRefreshTickDuration))
             }
             logger.info("auto-refresh stopped")
         }
     }
-    
+
     private func stopAutoRefresh() {
         autoRefreshTask?.cancel()
         autoRefreshTask = nil
     }
-    
+
     private func autoRefreshTick() async {
         guard let session = currentSession else { return }
         let now = Date().timeIntervalSince1970

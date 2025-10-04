@@ -10,12 +10,12 @@ struct Entrypoint: App {
         let rpcClient = RPCClient(
             baseURL: URL(string: "http://localhost:3000")!,
             secretKey: "a1b2c3d4e5f6g7h8i9j0k",
-            rpcPath: "/v1/rpc"
+            rpcPath: "/v1/rpc",
         )
         let keychain = Keychain(service: Bundle.main.bundleIdentifier!)
         _appModel = State(initialValue: AppModel(
             rpcClient: rpcClient,
-            keychain: keychain
+            keychain: keychain,
         ))
     }
 
@@ -28,7 +28,7 @@ struct Entrypoint: App {
                 }
                 .onReceive(
                     for: .pushNotificationTokenObtained,
-                    subject: PushNotificationManager.shared
+                    subject: PushNotificationManager.shared,
                 ) { message in
                     Task {
                         await appModel.updatePushNotificationToken(message.token)

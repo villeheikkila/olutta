@@ -6,7 +6,7 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
-extension CreateAnonymousUserCommand: UnauthenticatedCommand {
+extension CreateAnonymousUserCommand: UnauthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
         pg: PostgresClient,
