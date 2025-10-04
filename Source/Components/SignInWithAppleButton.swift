@@ -24,7 +24,7 @@ struct SignInWithAppleButtonView: View {
         case let .success(asAuthorization):
             await handleSuccess(asAuthorization: asAuthorization)
         case let .failure(error):
-            print(error)
+            logger.error(error.localizedDescription)
         }
     }
 
@@ -39,7 +39,6 @@ struct SignInWithAppleButtonView: View {
     }
 
     private func randomString(length: Int = 32) -> String {
-        precondition(length > 0)
         let charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._"
         return String((0 ..< length).compactMap { _ in
             charset.randomElement()
