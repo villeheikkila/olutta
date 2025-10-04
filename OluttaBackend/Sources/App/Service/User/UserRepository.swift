@@ -37,17 +37,17 @@ enum UserRepository {
 
     static func getRefreshTokenById(
         connection: PostgresConnection,
-        refreshTokenId: UUID,
         logger: Logger,
-    ) async throws -> (userId: UUID, deviceId: Int)? {
+        refreshTokenId: UUID,
+    ) async throws -> (userId: UUID, revokedAt: Date?)? {
         let result = try await connection.query("""
-            SELECT user_id
+            SELECT user_id, revoked_at
             FROM public.user_refresh_tokens
             WHERE refresh_token_id = \(refreshTokenId)
         """, logger: logger)
 
-        for try await (userId, deviceId) in result.decode((UUID, Int).self) {
-            return (userId: userId, deviceId: deviceId)
+        for try await (userId, revokedAt) in result.decode((UUID, Date?).self) {
+            return (userId: userId, revokedAt: revokedAt)
         }
         return nil
     }
@@ -256,6 +256,50 @@ enum UserRepository {
             WHERE device_id = \(deviceId) AND store_id = \(storeId) AND user_id = \(userId)
         """, logger: logger)
     }
+
+    static func getUserByAuthProvider(
+        connection: PostgresConnection,
+        logger: Logger,
+        authProvider: AuthProvider,
+        externalId: String,
+    ) async throws -> UUID? {
+        let result = try await connection.query("""
+            SELECT user_id
+            FROM public.user_auth_providers
+            WHERE auth_provider_id = \(authProvider.rawValue)
+            AND external_id = \(externalId)
+        """, logger: logger)
+        for try await userId in result.decode(UUID.self) {
+            return userId
+        }
+        return nil
+    }
+
+    static func connectUserToAuthProvider(
+        connection: PostgresConnection,
+        logger: Logger,
+        userId: UUID,
+        authProvider: AuthProvider,
+        externalId: String,
+    ) async throws -> (id: UUID, isNew: Bool) {
+        let result = try await connection.query("""
+            INSERT INTO public.user_auth_providers (user_id, auth_provider_id, external_id)
+            VALUES (\(userId), \(authProvider.rawValue), \(externalId))
+            ON CONFLICT (auth_provider_id, external_id) 
+            DO UPDATE SET updated_at = NOW()
+            RETURNING id, (xmax = 0) AS is_new
+        """, logger: logger)
+
+        for try await (id, isNew) in result.decode((UUID, Bool).self) {
+            return (id: id, isNew: isNew)
+        }
+        throw RepositoryError.noData
+    }
+}
+
+enum AuthProvider: String {
+    case signInWithApple = "sign_in_with_apple"
+    case anonymous
 }
 
 struct UserDeviceEntity: Sendable {

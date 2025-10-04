@@ -66,6 +66,15 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
         clientId: config.untappdClientId,
         clientSecret: config.untappdClientSecret,
     )
+    let appleService = SignInWithAppleService(logger: logger, httpClient: httpClient, appIdentifier: config.appleBundleId, authenticationMethod: .jwt(pemString: config.siwaToken, keyIdentifier: config.siwaKeyId, teamIdentifier: config.appleTeamId))
+    let apnsService = try APNSService(
+        privateKey: config.apnsToken,
+        keyIdentifier: config.appleAPNSKeyId,
+        teamIdentifier: config.appleTeamId,
+        environment: .development,
+        apnsTopic: config.apnsTopic,
+        pg: postgresClient,
+    )
     // queue
     let pgmqClient = PGMQClient(client: postgresClient)
     let queueContext = QueueContext(pgmq: pgmqClient, pg: postgresClient, openRouter: openRouter, logger: logger, alkoService: alkoService, untappdService: untappdService, config: config)
@@ -75,19 +84,10 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
     ))
     await queueService.registerQueue(alkoQueue)
     await queueService.registerQueue(untappdQueue)
-    // apns
-    let apnsService = try APNSService(
-        privateKey: config.apnsToken,
-        keyIdentifier: config.appleKeyId,
-        teamIdentifier: config.appleTeamId,
-        environment: .development,
-        apnsTopic: config.apnsTopic,
-        pg: postgresClient,
-    )
     // router
     let jwtKeyCollection = JWTKeyCollection()
     await jwtKeyCollection.add(hmac: HMACKey(stringLiteral: config.jwtSecret), digestAlgorithm: .sha256, kid: JWKIdentifier(stringLiteral: config.serverName.lowercased()))
-    let router = makeRouter(pg: postgresClient, persist: persist, jwtKeyCollection: jwtKeyCollection, requestSignatureSalt: config.requestSignatureSalt)
+    let router = makeRouter(pg: postgresClient, persist: persist, jwtKeyCollection: jwtKeyCollection, requestSignatureSalt: config.requestSignatureSalt, appleService: appleService)
     // app
     logger.info("starting \(config.serverName) server on port \(config.host):\(config.port)...")
     var app = Application(

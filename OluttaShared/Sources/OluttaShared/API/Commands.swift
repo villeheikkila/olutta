@@ -21,7 +21,7 @@ public extension UnauthenticatedCommand {
     static var authenticated: Bool { false }
 }
 
-public struct GetAppData: AuthenticatedCommand {
+public struct GetAppDataCommand: AuthenticatedCommand {
     public typealias RequestType = Request
     public typealias ResponseType = Response
     public static let name = "get_stores"
@@ -177,13 +177,34 @@ public struct RefreshTokensCommand: UnauthenticatedCommand {
     }
 }
 
-public struct CreateAnonymousUserCommand: UnauthenticatedCommand {
+public struct AuthenticateCommand: UnauthenticatedCommand {
     public typealias RequestType = Request
     public typealias ResponseType = Response
     public static let name = "create_anonymous_user"
 
+    public enum AuthenticationType: Codable, Sendable {
+        case anonymous
+        case signInWithApple(SignInWithApplePayload)
+
+        public struct SignInWithApplePayload: Codable, Sendable {
+            public let authorizationCode: String
+            public let idToken: String
+            public let nonce: String
+
+            public init(authorizationCode: String, idToken: String, nonce: String) {
+                self.authorizationCode = authorizationCode
+                self.idToken = idToken
+                self.nonce = nonce
+            }
+        }
+    }
+
     public struct Request: Codable, Sendable {
-        public init() {}
+        public let authenticationType: AuthenticationType
+
+        public init(authenticationType: AuthenticationType) {
+            self.authenticationType = authenticationType
+        }
     }
 
     public struct Response: Codable, Sendable {

@@ -64,9 +64,10 @@ struct IntroPage: View {
                             .blurOpacityEffect(initialAnimation)
                     }
                     VStack(spacing: 12) {
+                        SignInWithAppleButtonView()
                         Button(.continue, action: {
                             Task {
-                                await appModel.createAnonymousUser()
+                                await appModel.signIn(authenticationType: .anonymous)
                             }
                         })
                         .buttonStyle(.glass)

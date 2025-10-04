@@ -7,4 +7,5 @@ let allMigrations: [DatabaseMigration] = [
     AddPushNotificationSubscriptionTableMigration(),
     CreateUsersTableMigration(),
     AddUserRefreshTokensMigration(),
+    AddAuthProvidersMigration(),
 ]

@@ -18,8 +18,7 @@ protocol AuthenticatedCommandExecutable: AuthenticatedCommand {
 protocol UnauthenticatedCommandExecutable: UnauthenticatedCommand {
     static func execute(
         logger: Logger,
-        pg: PostgresClient,
-        jwtKeyCollection: JWTKeyCollection,
+        dependencies: UnauthenticatedCommandDependencies,
         request: RequestType,
     ) async throws -> ResponseType
 }
@@ -28,14 +27,12 @@ private func executeUnauthenticated<C: UnauthenticatedCommandExecutable>(
     _: C.Type,
     request: Request,
     context: AppRequestContext,
-    pg: PostgresClient,
-    jwtKeyCollection: JWTKeyCollection,
+    dependencies: UnauthenticatedCommandDependencies
 ) async throws -> Response {
     let requestData = try await request.decode(as: C.RequestType.self, context: context)
     let body = try await C.execute(
         logger: context.logger,
-        pg: pg,
-        jwtKeyCollection: jwtKeyCollection,
+        dependencies: dependencies,
         request: requestData,
     )
     return try Response.makeJSONResponse(body: body)
@@ -62,18 +59,16 @@ private func executeAuthenticated<C: AuthenticatedCommandExecutable>(
 func handleUnauthenticatedCommand(
     request: Request,
     context: AppRequestContext,
-    pg: PostgresClient,
-    persist _: RedisPersistDriver,
-    jwtKeyCollection: JWTKeyCollection,
+    dependencies: UnauthenticatedCommandDependencies,
 ) async throws -> Response {
     guard let commandName = context.parameters.get("command", as: String.self) else {
         throw HTTPError(.badRequest)
     }
     switch commandName {
     case RefreshTokensCommand.name:
-        return try await executeUnauthenticated(RefreshTokensCommand.self, request: request, context: context, pg: pg, jwtKeyCollection: jwtKeyCollection)
-    case CreateAnonymousUserCommand.name:
-        return try await executeUnauthenticated(CreateAnonymousUserCommand.self, request: request, context: context, pg: pg, jwtKeyCollection: jwtKeyCollection)
+        return try await executeUnauthenticated(RefreshTokensCommand.self, request: request, context: context, dependencies: dependencies)
+    case AuthenticateCommand.name:
+        return try await executeUnauthenticated(AuthenticateCommand.self, request: request, context: context, dependencies: dependencies)
     default:
         throw HTTPError(.badRequest)
     }
@@ -101,8 +96,8 @@ func handleCommand(
         return try await executeAuthenticated(SubscribeToStoreCommand.self, request: request, context: context, identity: identity, pg: pg, persist: persist)
     case UnsubscribeFromStoreCommand.name:
         return try await executeAuthenticated(UnsubscribeFromStoreCommand.self, request: request, context: context, identity: identity, pg: pg, persist: persist)
-    case GetAppData.name:
-        return try await executeAuthenticated(GetAppData.self, request: request, context: context, identity: identity, pg: pg, persist: persist)
+    case GetAppDataCommand.name:
+        return try await executeAuthenticated(GetAppDataCommand.self, request: request, context: context, identity: identity, pg: pg, persist: persist)
     case GetProductsByStoreIdCommand.name:
         return try await executeAuthenticated(GetProductsByStoreIdCommand.self, request: request, context: context, identity: identity, pg: pg, persist: persist)
     default:

@@ -7,18 +7,6 @@ import OluttaShared
 import OSLog
 import SwiftUI
 
-struct AlkoStoreEntity: Codable {
-    let id: UUID
-    let alkoStoreId: String
-    let name: String
-    let address: String
-    let city: String
-    let postalCode: String
-    let latitude: Decimal
-    let longitude: Decimal
-    let outletType: String
-}
-
 enum Status {
     case unauthenticated
     case loading
@@ -82,9 +70,9 @@ class AppModel {
         }
     }
 
-    func createAnonymousUser() async {
+    func signIn(authenticationType: AuthenticateCommand.AuthenticationType) async {
         do {
-            try await authManager.createAnonymousUser()
+            try await authManager.signIn(authenticationType: authenticationType)
             status = .ready
         } catch {
             logger.error("Failed to create anonymous user: \(error)")
@@ -96,7 +84,7 @@ class AppModel {
     func intializeAppData() async {
         status = .loading
         do {
-            let appData = try await rpcClient.call(GetAppData.self, with: .init())
+            let appData = try await rpcClient.call(GetAppDataCommand.self, with: .init())
             stores = appData.stores
             status = .ready
         } catch {
@@ -118,10 +106,6 @@ class AppModel {
         }
     }
 
-    var webStoreItems: [BeerEntity] {
-        return []
-    }
-
     func getProductsByStoreId(id: UUID) async {
         do {
             let products: [ProductEntity] = try await rpcClient.call(
@@ -134,6 +118,7 @@ class AppModel {
         }
     }
 
+    // annotations
     func initializeClusters() async {
         let annotations = stores.map { store in
             StoreAnnotation(
@@ -174,10 +159,10 @@ class AppModel {
         }
     }
 
+    // subscriptions
     func toggleSubscription() async throws {
         guard let selectedStore else { return }
         let deviceId = UUID()
-
         if subscribedStoreIds.contains(selectedStore.id) {
             do {
                 try await rpcClient.call(
@@ -202,24 +187,4 @@ class AppModel {
             }
         }
     }
-}
-
-struct StoreAnnotation: Identifiable, CoordinateIdentifiable, Hashable {
-    let id: String
-    var coordinate: CLLocationCoordinate2D
-    let store: StoreEntity
-
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
-
-    static func == (lhs: StoreAnnotation, rhs: StoreAnnotation) -> Bool {
-        lhs.id == rhs.id
-    }
-}
-
-struct StoreClusterAnnotation: Identifiable {
-    let id: UUID
-    let coordinate: CLLocationCoordinate2D
-    let count: Int
 }

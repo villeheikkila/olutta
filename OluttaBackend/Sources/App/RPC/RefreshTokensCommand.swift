@@ -9,39 +9,41 @@ import PostgresNIO
 extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
-        pg: PostgresClient,
-        jwtKeyCollection: JWTKeyCollection,
+        dependencies: UnauthenticatedCommandDependencies,
         request: Request,
     ) async throws -> Response {
         // verify payload
-        let payload: AccessTokenPayload
-        do {
-            payload = try await jwtKeyCollection.verify(request.refreshToken, as: AccessTokenPayload.self)
-        } catch {
-            logger.warning("invalid jwt token: \(error)")
-            throw HTTPError(.unauthorized)
-        }
-        let oldRefreshTokenId = payload.sub
-        return try await pg.withTransaction { tx in
+        let payload = try await verifyRefreshToken(
+            refreshToken: request.refreshToken,
+            jwtKeyCollection: dependencies.jwtKeyCollection,
+            logger: logger
+        )
+        return try await dependencies.pg.withTransaction { tx in
             // check that refresh token has not been revoked
-            let device = try await UserRepository.getUserDeviceByToken(connection: tx, logger: logger, tokenId: oldRefreshTokenId)
-            guard let device else {
-                logger.warning("attempt to refresh access token without corresponding row in user devices")
+            let refreshTokenVerificationRow = try await UserRepository.getRefreshTokenById(connection: tx, logger: logger, refreshTokenId: payload.sub)
+            guard let refreshTokenVerificationRow else {
+                logger.warning("attempt to refresh access token without corresponding row")
                 throw HTTPError(.unauthorized)
             }
-            if device.revokedAt != nil {
+            if refreshTokenVerificationRow.revokedAt != nil {
                 logger.warning("attempt to refresh access token with revoked refresh token")
                 throw HTTPError(.unauthorized)
             }
             let now = Date()
+            // refresh third party auth provider tokens
+            let authProviders = try await refreshAuthProviderTokens(
+                payload: payload,
+                dependencies: dependencies,
+                now: now
+            )
             // create new refresh token
             let refreshTokenExpiry = payload.exp // do not extend the refresh token exp period, we only want to use up the old token
             let newRefreshTokenId = UUID()
             let refreshTokenId = try await UserRepository.updateRefreshToken(
                 connection: tx,
                 logger: logger,
-                userId: device.userId,
-                oldTokenId: oldRefreshTokenId,
+                userId: refreshTokenVerificationRow.userId,
+                oldTokenId: payload.sub,
                 newTokenId: newRefreshTokenId,
                 expiresAt: refreshTokenExpiry
             )
@@ -49,26 +51,65 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
                 sub: refreshTokenId,
                 iat: now,
                 exp: refreshTokenExpiry,
+                provider: authProviders.refreshTokenProvider
             )
-            let refreshToken = try await jwtKeyCollection.sign(refreshTokenPayload)
+            let refreshToken = try await dependencies.jwtKeyCollection.sign(refreshTokenPayload)
             // create new access token
             let accessTokenId = UUID()
-            let payload = AccessTokenPayload(
+            let accessTokenExpiry = now.addingTimeInterval(15 * 60) // 15 minutes
+            let accessTokenPayload = AccessTokenPayload(
                 sub: accessTokenId,
-                userId: device.userId,
+                userId: refreshTokenVerificationRow.userId,
                 refreshTokenId: newRefreshTokenId,
-                iat: Date(),
-                // 15 minutes
-                exp: Date().addingTimeInterval(15 * 60),
+                iat: now,
+                exp: accessTokenExpiry,
+                provider: authProviders.accessTokenProvider
             )
-            let accessToken = try await jwtKeyCollection.sign(payload)
-            // response
+            let accessToken = try await dependencies.jwtKeyCollection.sign(accessTokenPayload)
+            // return response
             return Response(
                 accessToken: accessToken,
-                accessTokenExpiresAt: payload.exp,
+                accessTokenExpiresAt: accessTokenExpiry,
                 refreshToken: refreshToken,
-                refreshTokenExpiresAt: refreshTokenExpiry,
+                refreshTokenExpiresAt: refreshTokenExpiry
             )
+        }
+    }
+
+    private static func verifyRefreshToken(
+        refreshToken: String,
+        jwtKeyCollection: JWTKeyCollection,
+        logger: Logger
+    ) async throws -> RefreshTokenPayload {
+        do {
+            return try await jwtKeyCollection.verify(refreshToken, as: RefreshTokenPayload.self)
+        } catch {
+            logger.warning("invalid jwt token: \(error)")
+            throw HTTPError(.unauthorized)
+        }
+    }
+
+    private struct AuthProviders {
+        let refreshTokenProvider: RefreshTokenPayload.AuthProvider?
+        let accessTokenProvider: AccessTokenPayload.AuthProvider?
+    }
+
+    private static func refreshAuthProviderTokens(
+        payload: RefreshTokenPayload,
+        dependencies: UnauthenticatedCommandDependencies,
+        now: Date
+    ) async throws -> AuthProviders {
+        switch payload.provider {
+        case let .signInWithApple(claims):
+            let tokens = try await dependencies.appleService.sendTokenRequest(type: .refreshToken(refreshToken: claims.refreshToken))
+            let accessTokenExpiresAt = now.addingTimeInterval(tokens.expiresIn)
+            let refreshTokenExpiresAt = now.addingTimeInterval(180 * 24 * 60 * 60) // 6 months - each refresh extends the expiry
+            return AuthProviders(
+                refreshTokenProvider: .signInWithApple(.init(refreshToken: tokens.refreshToken, expiresAt: refreshTokenExpiresAt)),
+                accessTokenProvider: .signInWithApple(.init(accessToken: tokens.accessToken, expiresAt: accessTokenExpiresAt))
+            )
+        case .none:
+            return AuthProviders(refreshTokenProvider: nil, accessTokenProvider: nil)
         }
     }
 }

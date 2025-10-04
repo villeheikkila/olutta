@@ -7,7 +7,13 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
-func makeRouter(pg: PostgresClient, persist: RedisPersistDriver, jwtKeyCollection: JWTKeyCollection, requestSignatureSalt _: String) -> Router<AppRequestContext> {
+struct UnauthenticatedCommandDependencies {
+    let pg: PostgresClient
+    let jwtKeyCollection: JWTKeyCollection
+    let appleService: SignInWithAppleService
+}
+
+func makeRouter(pg: PostgresClient, persist: RedisPersistDriver, jwtKeyCollection: JWTKeyCollection, requestSignatureSalt: String, appleService: SignInWithAppleService) -> Router<AppRequestContext> {
     let router = Router(context: AppRequestContext.self)
     router.addMiddleware {
         LogRequestsMiddleware(.info)
@@ -19,7 +25,7 @@ func makeRouter(pg: PostgresClient, persist: RedisPersistDriver, jwtKeyCollectio
     }
     router.addRoutes(RouteCollection(context: AppRequestContext.self)
         .post("/v1/rpc/:command/unauthenticated", use: { request, context in
-            try await handleUnauthenticatedCommand(request: request, context: context, pg: pg, persist: persist, jwtKeyCollection: jwtKeyCollection)
+            try await handleUnauthenticatedCommand(request: request, context: context, dependencies: .init(pg: pg, jwtKeyCollection: jwtKeyCollection, appleService: appleService))
         }))
     router.addRoutes(RouteCollection(context: AppRequestContext.self)
         .add(middleware: JWTAuthenticator(jwtKeyCollection: jwtKeyCollection))

@@ -24,7 +24,10 @@ struct Config {
     let requestSignatureSalt: String
     let openrouterApiKey: String
     let appleTeamId: String
-    let appleKeyId: String
+    let appleAPNSKeyId: String
+    let appleBundleId: String
+    let siwaToken: String
+    let siwaKeyId: String
     let apnsToken: String
     let apnsTopic: String
     let jwtSecret: String
@@ -53,12 +56,15 @@ struct Config {
         requestSignatureSalt = try configReader.requiredString(forKey: "request.signature.salt")
         openrouterApiKey = try configReader.requiredString(forKey: "openrouter.api.key")
         appleTeamId = try configReader.requiredString(forKey: "apple.team.id")
-        appleKeyId = try configReader.requiredString(forKey: "apple.key.id")
-        apnsTopic = try configReader.requiredString(forKey: "apple.apns.topic")
+        appleAPNSKeyId = try configReader.requiredString(forKey: "apple.apns.key.id")
         let apnsToken = try configReader.requiredString(forKey: "apple.apns.token").decodeBase64()
         guard let apnsToken else {
             throw ConfigError.invalidAPNSToken
         }
+        siwaKeyId = try configReader.requiredString(forKey: "apple.siwa.key.id")
+        siwaToken = try configReader.requiredString(forKey: "apple.siwa.token")
+        appleBundleId = try configReader.requiredString(forKey: "apple.bundle.id")
+        apnsTopic = try configReader.requiredString(forKey: "apple.apns.topic")
         self.apnsToken = apnsToken
         jwtSecret = try configReader.requiredString(forKey: "jwt.secret")
     }

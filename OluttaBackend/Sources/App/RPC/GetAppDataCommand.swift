@@ -4,7 +4,7 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
-extension GetAppData: AuthenticatedCommandExecutable {
+extension GetAppDataCommand: AuthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
         identity _: UserIdentity,

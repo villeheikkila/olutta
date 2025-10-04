@@ -56,10 +56,10 @@ final class AuthManager {
     }
 
     // public
-    func createAnonymousUser() async throws(RPCError) {
+    func signIn(authenticationType: AuthenticateCommand.AuthenticationType) async throws(RPCError) {
         let response = try await rpcClient.call(
-            CreateAnonymousUserCommand.self,
-            with: .init(),
+            AuthenticateCommand.self,
+            with: .init(authenticationType: authenticationType),
         )
         await setSession(
             accessToken: response.accessToken,
@@ -69,7 +69,7 @@ final class AuthManager {
         )
     }
 
-    func logout() async {
+    func signOut() async {
         await clear()
     }
 
