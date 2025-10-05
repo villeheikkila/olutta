@@ -85,6 +85,7 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
         apnsTopic: config.appleBundleId,
         pg: postgresClient,
     )
+    let signatureService = SignatureService(secretKey: config.requestSignatureSalt)
     // queue
     let pgmqClient = PGMQClient(client: postgresClient)
     let queueContext = QueueContext(pgmq: pgmqClient, pg: postgresClient, openRouter: openRouter, logger: logger, alkoService: alkoService, untappdService: untappdService, config: config)
@@ -117,6 +118,7 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
         jwtKeyCollection: jwtKeyCollection,
         requestSignatureSalt: config.requestSignatureSalt,
         appleService: appleService,
+        signatureService: signatureService,
         unauthenticatedCommands: unauthenticatedCommands,
         authenticatedCommands: authenticatedCommands,
     )

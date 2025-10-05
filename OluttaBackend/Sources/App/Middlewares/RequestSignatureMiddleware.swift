@@ -9,8 +9,8 @@ import OluttaShared
 public struct RequestSignatureMiddleware<Context: RequestContext>: RouterMiddleware {
     private let signatureService: SignatureService
 
-    public init(secretKey: String) {
-        signatureService = SignatureService(secretKey: secretKey)
+    public init(signatureService: SignatureService) {
+        self.signatureService = signatureService
     }
 
     public func handle(_ request: Request, context: Context, next: (Request, Context) async throws -> Response) async throws -> Response {
