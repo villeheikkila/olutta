@@ -107,13 +107,20 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
         GetAppDataCommand.name: GetAppDataCommand.self,
         GetProductsByStoreIdCommand.name: GetProductsByStoreIdCommand.self,
     ]
-    // router
+    // jwt
     let jwtKeyCollection = JWTKeyCollection()
     await jwtKeyCollection.add(hmac: HMACKey(stringLiteral: config.jwtSecret), digestAlgorithm: .sha256, kid: JWKIdentifier(stringLiteral: config.serverName.lowercased()))
-    let router = makeRouter(pg: postgresClient, persist: persist, jwtKeyCollection: jwtKeyCollection, requestSignatureSalt: config.requestSignatureSalt, appleService: appleService,
-                            unauthenticatedCommands: unauthenticatedCommands, authenticatedCommands: authenticatedCommands)
+    // router
+    let router = makeRouter(
+        pg: postgresClient,
+        persist: persist,
+        jwtKeyCollection: jwtKeyCollection,
+        requestSignatureSalt: config.requestSignatureSalt,
+        appleService: appleService,
+        unauthenticatedCommands: unauthenticatedCommands,
+        authenticatedCommands: authenticatedCommands,
+    )
     // app
-    logger.info("starting \(config.serverName) server on port \(config.host):\(config.port)...")
     var app = Application(
         router: router,
         configuration: .init(
@@ -126,6 +133,7 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
     app.beforeServerStarts {
         try await postgresMigrations.apply(client: postgresClient, logger: logger, dryRun: false)
     }
+    logger.info("starting \(config.serverName) server on port \(config.host):\(config.port)...")
     return app
 }
 

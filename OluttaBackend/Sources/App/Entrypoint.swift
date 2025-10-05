@@ -2,7 +2,7 @@ import Configuration
 import Logging
 
 @main
-struct App {
+struct Entrypoint {
     static func main() async throws {
         let configReader = try await ConfigReader(provider: EnvironmentVariablesProvider(environmentFilePath: ".env"))
         let config = try Config(configReader: configReader)

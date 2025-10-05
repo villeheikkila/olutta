@@ -2,7 +2,7 @@ import AsyncHTTPClient
 import Foundation
 import Logging
 
-final class AlkoService: Sendable {
+struct AlkoService: Sendable {
     private let logger: Logger
     private let httpClient: HTTPClient
     private let decoder: JSONDecoder
