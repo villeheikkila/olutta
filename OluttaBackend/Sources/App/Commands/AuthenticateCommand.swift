@@ -7,7 +7,7 @@ import PostgresNIO
 extension AuthenticateCommand: UnauthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
-        deps: UnauthenticatedCommandDependencies,
+        deps: CommandDependencies,
         request: Request,
     ) async throws -> Response {
         try await deps.pg.withTransaction { tx in
@@ -15,7 +15,7 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
             // handle authentication provider
             let authResult = try await handleAuthProvider(
                 request: request,
-                dependencies: deps,
+                deps: deps,
                 tx: tx,
                 logger: logger,
                 now: now,
@@ -68,19 +68,19 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
 
     private static func handleAuthProvider(
         request: Request,
-        dependencies: UnauthenticatedCommandDependencies,
+        deps: CommandDependencies,
         tx: PostgresConnection,
         logger: Logger,
         now: Date,
     ) async throws -> AuthProviderResult {
         switch request.authenticationType {
         case let .signInWithApple(payload):
-            let tokens = try await dependencies.siwaService.sendTokenRequest(type: .authorizationCode(code: payload.authorizationCode))
+            let tokens = try await deps.siwaService.sendTokenRequest(type: .authorizationCode(code: payload.authorizationCode))
             guard let idTokenString = tokens.idToken else {
                 logger.error("missing id token when converting authorization code")
                 throw AuthenticateCommandError.missingIdToken
             }
-            let idToken = try await dependencies.siwaService.verifyIdToken(idToken: idTokenString, nonce: payload.nonce)
+            let idToken = try await deps.siwaService.verifyIdToken(idToken: idTokenString, nonce: payload.nonce)
             let externalId = idToken.sub.value
             let existingUserId = try await UserRepository.getUserByAuthProvider(connection: tx, logger: logger, authProvider: .signInWithApple, externalId: externalId)
             let accessTokenExpiresAt = now.addingTimeInterval(tokens.expiresIn)

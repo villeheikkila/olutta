@@ -7,7 +7,7 @@ extension GetProductsByStoreIdCommand: AuthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
         identity _: UserIdentity,
-        deps: AuthenticatedCommandDependencies,
+        deps: CommandDependencies,
         request: Request,
     ) async throws -> Response {
         let products = try await deps.pg.withTransaction { tx in

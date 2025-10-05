@@ -8,7 +8,7 @@ import PostgresNIO
 extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
-        deps: UnauthenticatedCommandDependencies,
+        deps: CommandDependencies,
         request: Request,
     ) async throws -> Response {
         // verify payload
@@ -32,7 +32,7 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
             // refresh third party auth provider tokens
             let authProviders = try await refreshAuthProviderTokens(
                 payload: payload,
-                dependencies: deps,
+                deps: deps,
                 now: now,
             )
             // create new refresh token
@@ -95,12 +95,12 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
 
     private static func refreshAuthProviderTokens(
         payload: RefreshTokenPayload,
-        dependencies: UnauthenticatedCommandDependencies,
+        deps: CommandDependencies,
         now: Date,
     ) async throws -> AuthProviders {
         switch payload.provider {
         case let .signInWithApple(claims):
-            let tokens = try await dependencies.siwaService.sendTokenRequest(type: .refreshToken(refreshToken: claims.refreshToken))
+            let tokens = try await deps.siwaService.sendTokenRequest(type: .refreshToken(refreshToken: claims.refreshToken))
             let accessTokenExpiresAt = now.addingTimeInterval(tokens.expiresIn)
             let refreshTokenExpiresAt = now.addingTimeInterval(180 * 24 * 60 * 60) // 6 months - each refresh extends the expiry
             return AuthProviders(

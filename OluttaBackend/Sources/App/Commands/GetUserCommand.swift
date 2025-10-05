@@ -8,7 +8,7 @@ extension GetUserCommand: AuthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
         identity: UserIdentity,
-        deps: AuthenticatedCommandDependencies,
+        deps: CommandDependencies,
         request _: Request,
     ) async throws -> Response {
         try await deps.pg.withConnection { tx in

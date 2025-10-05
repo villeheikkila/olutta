@@ -29,8 +29,7 @@ struct AuthorizerMiddleware: RouterMiddleware {
         guard let authorizationHeader = request.headers[.authorization],
               authorizationHeader.hasPrefix("Bearer ")
         else {
-            context.logger.warning("call made to authorized route without authorization header")
-            throw HTTPError(.unauthorized)
+            return nil
         }
         let accessToken = authorizationHeader.replacingOccurrences(of: "Bearer ", with: "")
         let payload: AccessTokenPayload
@@ -38,7 +37,7 @@ struct AuthorizerMiddleware: RouterMiddleware {
             payload = try await jwtKeyCollection.verify(accessToken, as: AccessTokenPayload.self)
         } catch {
             context.logger.warning("invalid jwt token: \(error.localizedDescription)")
-            throw HTTPError(.unauthorized)
+            return nil
         }
         return UserIdentity(userId: payload.userId)
     }

@@ -7,7 +7,7 @@ extension GetAppDataCommand: AuthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
         identity _: UserIdentity,
-        deps: AuthenticatedCommandDependencies,
+        deps: CommandDependencies,
         request _: Request,
     ) async throws -> Response {
         let stores = try await deps.pg.withConnection { tx in

@@ -9,6 +9,10 @@ public protocol CommandMetadata: Sendable {
     static var authenticated: Bool { get }
 }
 
+public protocol CommandExecutable: Sendable {
+    static var authenticated: Bool { get }
+}
+
 public protocol AuthenticatedCommand: CommandMetadata {}
 
 public extension AuthenticatedCommand {

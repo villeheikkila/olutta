@@ -7,7 +7,7 @@ extension RefreshDeviceCommand: AuthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
         identity: UserIdentity,
-        deps: AuthenticatedCommandDependencies,
+        deps: CommandDependencies,
         request: Request,
     ) async throws -> Response {
         try await deps.pg.withTransaction { tx in

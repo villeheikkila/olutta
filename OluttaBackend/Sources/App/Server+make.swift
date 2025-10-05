@@ -97,11 +97,9 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
     await queueService.registerQueue(alkoQueue)
     await queueService.registerQueue(untappdQueue)
     // commands
-    let unauthenticatedCommands: [String: any UnauthenticatedCommandExecutable.Type] = [
+    let commands: [String: any CommandExecutable.Type] = [
         RefreshTokensCommand.name: RefreshTokensCommand.self,
         AuthenticateCommand.name: AuthenticateCommand.self,
-    ]
-    let authenticatedCommands: [String: any AuthenticatedCommandExecutable.Type] = [
         RefreshDeviceCommand.name: RefreshDeviceCommand.self,
         GetUserCommand.name: GetUserCommand.self,
         SubscribeToStoreCommand.name: SubscribeToStoreCommand.self,
@@ -114,15 +112,16 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
     await jwtKeyCollection.add(hmac: HMACKey(stringLiteral: config.jwtSecret), digestAlgorithm: .sha256, kid: JWKIdentifier(stringLiteral: config.serverName.lowercased()))
     // router
     let router = makeRouter(
-        pg: postgresClient,
-        persist: persist,
-        decoder: decoder,
-        encoder: encoder,
-        jwtKeyCollection: jwtKeyCollection,
-        appleService: appleService,
-        signatureService: signatureService,
-        unauthenticatedCommands: unauthenticatedCommands,
-        authenticatedCommands: authenticatedCommands,
+        deps: .init(
+            pg: postgresClient,
+            persist: persist,
+            decoder: decoder,
+            encoder: encoder,
+            signatureService: signatureService,
+            jwtKeyCollection: jwtKeyCollection,
+            siwaService: appleService,
+        ),
+        commands: commands,
     )
     // app
     var app = Application(

@@ -58,10 +58,10 @@ final class RPCClient: RPCClientProtocol {
         _: C.Type,
         with request: C.RequestType,
         headers: [HTTPField] = [],
-        authenticated: Bool = false,
+        authenticated _: Bool = false,
     ) async throws(RPCError) -> C.ResponseType {
         try await post(
-            path: "\(rpcPath)/\(C.name)" + (authenticated ? "" : "/unauthenticated"),
+            path: "\(rpcPath)/\(C.name)",
             body: request,
             headers: headers,
         )
@@ -127,7 +127,7 @@ final class RPCClient: RPCClientProtocol {
                 scheme: nil,
                 authority: nil,
                 path: path,
-                headers: httpFields
+                headers: httpFields,
             )
         } catch {
             throw .signatureFailed(error)
