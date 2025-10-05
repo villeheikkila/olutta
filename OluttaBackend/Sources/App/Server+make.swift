@@ -18,6 +18,7 @@ import ServiceLifecycle
 func makeServer(config: Config) async throws -> some ApplicationProtocol {
     // utils
     let decoder = JSONDecoder()
+    let encoder = JSONEncoder()
     // logger
     let logger = makeLogger(
         label: config.serverName,
@@ -115,8 +116,9 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
     let router = makeRouter(
         pg: postgresClient,
         persist: persist,
+        decoder: decoder,
+        encoder: encoder,
         jwtKeyCollection: jwtKeyCollection,
-        requestSignatureSalt: config.requestSignatureSalt,
         appleService: appleService,
         signatureService: signatureService,
         unauthenticatedCommands: unauthenticatedCommands,

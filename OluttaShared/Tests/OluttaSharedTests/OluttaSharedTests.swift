@@ -37,7 +37,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     #expect(!result.signature.isEmpty)
     #expect(result.bodyHash != nil)
@@ -57,7 +57,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: nil
+        body: nil,
     )
     #expect(!result.signature.isEmpty)
     #expect(result.bodyHash == nil)
@@ -75,7 +75,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: Data()
+        body: Data(),
     )
     #expect(!result.signature.isEmpty)
     #expect(result.bodyHash == nil)
@@ -94,7 +94,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     let result2 = try service.createSignature(
         method: method,
@@ -102,7 +102,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     #expect(result1.signature == result2.signature)
     #expect(result1.bodyHash == result2.bodyHash)
@@ -120,7 +120,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     let postResult = try service.createSignature(
         method: .post,
@@ -128,7 +128,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     #expect(getResult.signature != postResult.signature)
 }
@@ -145,7 +145,7 @@ import Testing
         authority: "example.com",
         path: "/api/test",
         headers: headers,
-        body: body
+        body: body,
     )
     let result2 = try service.createSignature(
         method: method,
@@ -153,7 +153,7 @@ import Testing
         authority: "example.com",
         path: "/api/different",
         headers: headers,
-        body: body
+        body: body,
     )
     #expect(result1.signature != result2.signature)
 }
@@ -171,7 +171,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     let httpResult = try service.createSignature(
         method: method,
@@ -179,7 +179,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     #expect(httpsResult.signature != httpResult.signature)
 }
@@ -197,7 +197,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     let result2 = try service.createSignature(
         method: method,
@@ -205,7 +205,7 @@ import Testing
         authority: "different.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     #expect(result1.signature != result2.signature)
 }
@@ -225,7 +225,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers1,
-        body: body
+        body: body,
     )
     let result2 = try service.createSignature(
         method: method,
@@ -233,7 +233,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers2,
-        body: body
+        body: body,
     )
     #expect(result1.signature != result2.signature)
 }
@@ -252,7 +252,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     let result2 = try service2.createSignature(
         method: method,
@@ -260,7 +260,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     #expect(result1.signature != result2.signature)
     #expect(result1.bodyHash == result2.bodyHash)
@@ -279,7 +279,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     headers.append(.init(name: .requestSignature, value: result.signature))
     if let bodyHash = result.bodyHash {
@@ -291,7 +291,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
 }
 
@@ -308,7 +308,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     headers.append(.init(name: .requestSignature, value: result.signature))
     try service.verifySignature(
@@ -317,7 +317,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
 }
 
@@ -334,7 +334,7 @@ import Testing
             authority: "example.com",
             path: path,
             headers: headers,
-            body: body
+            body: body,
         )
     }
 }
@@ -354,7 +354,7 @@ import Testing
             authority: "example.com",
             path: path,
             headers: headers,
-            body: body
+            body: body,
         )
     }
 }
@@ -375,7 +375,7 @@ import Testing
             authority: "example.com",
             path: path,
             headers: headers,
-            body: body
+            body: body,
         )
     }
 }
@@ -393,7 +393,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     headers.append(.init(name: .requestSignature, value: "invalid-signature"))
     if let bodyHash = result.bodyHash {
@@ -406,7 +406,7 @@ import Testing
             authority: "example.com",
             path: path,
             headers: headers,
-            body: body
+            body: body,
         )
     }
 }
@@ -424,7 +424,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     headers.append(.init(name: .requestSignature, value: result.signature))
     if let bodyHash = result.bodyHash {
@@ -438,7 +438,7 @@ import Testing
             authority: "example.com",
             path: path,
             headers: headers,
-            body: modifiedBody
+            body: modifiedBody,
         )
     }
 }
@@ -456,7 +456,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     headers.append(.init(name: .requestSignature, value: result.signature))
     if let bodyHash = result.bodyHash {
@@ -470,7 +470,7 @@ import Testing
             authority: "example.com",
             path: modifiedPath,
             headers: headers,
-            body: body
+            body: body,
         )
     }
 }
@@ -488,7 +488,7 @@ import Testing
         authority: nil,
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     #expect(!result.signature.isEmpty)
     headers.append(.init(name: .requestSignature, value: result.signature))
@@ -501,7 +501,7 @@ import Testing
         authority: nil,
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
 }
 
@@ -520,7 +520,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
     #expect(!result.signature.isEmpty)
     headers.append(.init(name: .requestSignature, value: result.signature))
@@ -533,7 +533,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers,
-        body: body
+        body: body,
     )
 }
 
@@ -552,7 +552,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers1,
-        body: body
+        body: body,
     )
     let result2 = try service.createSignature(
         method: method,
@@ -560,7 +560,7 @@ import Testing
         authority: "example.com",
         path: path,
         headers: headers2,
-        body: body
+        body: body,
     )
     #expect(result1.signature == result2.signature)
 }

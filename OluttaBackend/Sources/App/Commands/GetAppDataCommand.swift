@@ -28,3 +28,9 @@ extension GetAppDataCommand: AuthenticatedCommandExecutable {
         return Response(stores: storeEntities)
     }
 }
+
+extension GetAppDataCommand: CacheableCommand {
+    static func cachePolicy(for _: Request) -> CachePolicy {
+        .cache(key: "app_data", ttl: .seconds(300))
+    }
+}
