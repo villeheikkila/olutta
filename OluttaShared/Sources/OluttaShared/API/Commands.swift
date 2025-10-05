@@ -9,7 +9,7 @@ public protocol CommandMetadata: Sendable {
     static var authenticated: Bool { get }
 }
 
-public protocol CommandExecutable: Sendable {
+public protocol CommandExecutable: CommandMetadata {
     static var authenticated: Bool { get }
 }
 

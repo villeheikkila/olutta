@@ -30,9 +30,12 @@ struct AppRequestContext: RequestContext {
 // router
 func makeRouter(
     deps: CommandDependencies,
-    commands: [String: any CommandExecutable.Type],
+    commands: [any CommandExecutable.Type],
 ) -> Router<AppRequestContext> {
     let router = Router(context: AppRequestContext.self)
+    let commandMap = Dictionary(
+        uniqueKeysWithValues: commands.map { ($0.name, $0) }
+    )
     router.addMiddleware {
         LogRequestsMiddleware(.debug)
         RequestSignatureMiddleware(signatureService: deps.signatureService)
@@ -49,7 +52,7 @@ func makeRouter(
                     request: request,
                     context: context,
                     deps: deps,
-                    commands: commands,
+                    commandMap: commandMap,
                 )
             },
     )
@@ -60,12 +63,12 @@ private func handleCommand(
     request: Request,
     context: AppRequestContext,
     deps: CommandDependencies,
-    commands: [String: any CommandExecutable.Type],
+    commandMap: [String: any CommandExecutable.Type],
 ) async throws -> Response {
     guard let commandName = context.parameters.get("command", as: String.self) else {
         throw HTTPError(.badRequest)
     }
-    guard let commandType = commands[commandName] else {
+    guard let commandType = commandMap[commandName] else {
         throw HTTPError(.badRequest)
     }
     // authenticated

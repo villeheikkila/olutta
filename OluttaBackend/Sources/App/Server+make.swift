@@ -97,15 +97,15 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
     await queueService.registerQueue(alkoQueue)
     await queueService.registerQueue(untappdQueue)
     // commands
-    let commands: [String: any CommandExecutable.Type] = [
-        RefreshTokensCommand.name: RefreshTokensCommand.self,
-        AuthenticateCommand.name: AuthenticateCommand.self,
-        RefreshDeviceCommand.name: RefreshDeviceCommand.self,
-        GetUserCommand.name: GetUserCommand.self,
-        SubscribeToStoreCommand.name: SubscribeToStoreCommand.self,
-        UnsubscribeFromStoreCommand.name: UnsubscribeFromStoreCommand.self,
-        GetAppDataCommand.name: GetAppDataCommand.self,
-        GetProductsByStoreIdCommand.name: GetProductsByStoreIdCommand.self,
+    let commands: [any CommandExecutable.Type] = [
+        RefreshTokensCommand.self,
+        AuthenticateCommand.self,
+        RefreshDeviceCommand.self,
+        GetUserCommand.self,
+        SubscribeToStoreCommand.self,
+        UnsubscribeFromStoreCommand.self,
+        GetAppDataCommand.self,
+        GetProductsByStoreIdCommand.self,
     ]
     // jwt
     let jwtKeyCollection = JWTKeyCollection()
