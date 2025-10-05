@@ -74,7 +74,7 @@ final class RPCClient: RPCClientProtocol {
         headers: [HTTPField] = [],
     ) async throws(RPCError) -> T {
         let startTime = Date()
-
+        // url
         guard let urlComponents = URLComponents(
             url: baseURL.appendingPathComponent(path),
             resolvingAgainstBaseURL: true,
@@ -88,6 +88,7 @@ final class RPCClient: RPCClientProtocol {
         guard let url = components.url else {
             throw .invalidURL(path)
         }
+        // headers
         var httpFields = HTTPFields()
         httpFields.append(.init(name: .contentType, value: "application/json"))
         httpFields.append(.init(name: .requestId, value: UUID.v7.uuidString))
@@ -97,6 +98,7 @@ final class RPCClient: RPCClientProtocol {
         for header in headers {
             httpFields.append(header)
         }
+        // body
         let bodyData: Data?
         if let body {
             do {
@@ -107,28 +109,31 @@ final class RPCClient: RPCClientProtocol {
         } else {
             bodyData = nil
         }
+        // authority
         let authority = if let port = url.port, let host = url.host {
             "\(host):\(port)"
         } else {
             url.host
         }
-        let signatureResult: (signature: String, bodyHash: String?)
+        // request signature
+        if let bodyData {
+            let bodyHash = signatureService.computeBodyHash(data: bodyData)
+            httpFields.append(.init(name: .bodyHash, value: bodyHash))
+        }
+        let signatureResult: String
         do {
             signatureResult = try signatureService.createSignature(
                 method: .post,
                 scheme: nil,
                 authority: nil,
                 path: path,
-                headers: httpFields,
-                body: bodyData,
+                headers: httpFields
             )
         } catch {
             throw .signatureFailed(error)
         }
-        if let bodyHash = signatureResult.bodyHash {
-            httpFields.append(.init(name: .bodyHash, value: bodyHash))
-        }
-        httpFields.append(.init(name: .requestSignature, value: signatureResult.signature))
+        httpFields.append(.init(name: .requestSignature, value: signatureResult))
+        // request
         let httpRequest = HTTPRequest(
             method: .post,
             scheme: url.scheme,

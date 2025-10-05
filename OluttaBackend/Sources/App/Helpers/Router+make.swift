@@ -10,14 +10,15 @@ func makeRouter(
     pg: PostgresClient,
     persist: RedisPersistDriver,
     jwtKeyCollection: JWTKeyCollection,
-    requestSignatureSalt _: String,
+    requestSignatureSalt: String,
     appleService: SignInWithAppleService,
     unauthenticatedCommands: [String: any UnauthenticatedCommandExecutable.Type],
     authenticatedCommands: [String: any AuthenticatedCommandExecutable.Type],
 ) -> Router<AppRequestContext> {
     let router = Router(context: AppRequestContext.self)
     router.addMiddleware {
-        LogRequestsMiddleware(.trace)
+        LogRequestsMiddleware(.debug)
+        RequestSignatureMiddleware(secretKey: requestSignatureSalt)
         UniqueRequestMiddleware(persist: persist)
     }
     router.get("/health") { _, _ -> HTTPResponse.Status in

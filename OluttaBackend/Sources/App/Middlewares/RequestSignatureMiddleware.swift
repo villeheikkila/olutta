@@ -26,12 +26,15 @@ public struct RequestSignatureMiddleware<Context: RequestContext>: RouterMiddlew
                 body: data,
             )
             var newRequest = request
-            newRequest.body = .init(asyncSequence: CollectionOfOne(ByteBuffer(data: data)).async)
+            newRequest.body = .init(buffer: buffer)
             return try await next(newRequest, context)
-        } catch {
+        } catch let error as SignatureError {
             context.logger.error("signature verification failed: \(error)")
-            // return a generic unauthorized error to the client
-            throw HTTPError(.unauthorized, message: "invalid request signature")
+            // hide error from client
+            throw HTTPError(.internalServerError)
+        } catch {
+            context.logger.error("unexpected error: \(error)")
+            throw HTTPError(.internalServerError)
         }
     }
 }

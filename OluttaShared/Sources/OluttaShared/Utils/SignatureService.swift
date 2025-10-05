@@ -2,7 +2,7 @@ import Crypto
 import Foundation
 import HTTPTypes
 
-public enum SignatureError: Error {
+public enum SignatureError: Error, Equatable {
     case encodingFailure(String)
     case missingSignature
     case missingBodyHash
@@ -14,8 +14,6 @@ public extension HTTPField.Name {
     static let requestSignature = Self("X-Request-Signature")!
     static let bodyHash = Self("X-Body-Hash")!
     static let requestId = Self("X-Request-ID")!
-    static let uploadDraftInteropVersion = Self("Upload-Draft-Interop-Version")!
-    static let uploadComplete = Self("Upload-Complete")!
 }
 
 public struct SignatureService: Sendable {
@@ -23,34 +21,6 @@ public struct SignatureService: Sendable {
 
     public init(secretKey: String) {
         symmetricKey = SymmetricKey(data: secretKey.data(using: .utf8)!)
-    }
-
-    public func createSignature(
-        method: HTTPRequest.Method,
-        scheme: String?,
-        authority: String?,
-        path: String,
-        headers: HTTPFields,
-        body: Data?,
-    ) throws(SignatureError) -> (signature: String, bodyHash: String?) {
-        var modifiedHeaders = headers
-        let bodyHash: String? = if let body, !body.isEmpty {
-            computeBodyHash(data: body)
-        } else {
-            nil
-        }
-        if let bodyHash {
-            modifiedHeaders.append(.init(name: .bodyHash, value: bodyHash))
-        }
-        let signature = try createSignatureInternal(
-            method: method,
-            scheme: scheme,
-            authority: authority,
-            path: path,
-            headers: modifiedHeaders,
-            bodyHash: bodyHash,
-        )
-        return (signature, bodyHash)
     }
 
     public func verifySignature(
@@ -73,26 +43,29 @@ public struct SignatureService: Sendable {
                 throw .invalidBodyHash
             }
         }
-        let computedSignature = try createSignatureInternal(
+        let computedSignature = try createSignature(
             method: method,
             scheme: scheme,
             authority: authority,
             path: path,
             headers: headers,
-            bodyHash: headers[.bodyHash],
         )
         guard computedSignature == signatureHeader else {
             throw .invalidSignature
         }
     }
 
-    private func createSignatureInternal(
+    public func computeBodyHash(data: Data) -> String {
+        let hash = SHA256.hash(data: data)
+        return Data(hash).base64EncodedString()
+    }
+
+    public func createSignature(
         method: HTTPRequest.Method,
         scheme: String?,
         authority: String?,
         path: String,
         headers: HTTPFields,
-        bodyHash: String?,
     ) throws(SignatureError) -> String {
         var signatureComponents = [String]()
         signatureComponents.append(method.rawValue)
@@ -113,19 +86,11 @@ public struct SignatureService: Sendable {
         for field in sortedHeaders {
             signatureComponents.append("\(field.name.canonicalName):\(field.value)")
         }
-        if let bodyHash {
-            signatureComponents.append(bodyHash)
-        }
-        let stringToSign = signatureComponents.joined(separator: "\n")
+        let stringToSign = signatureComponents.joined(separator: "-").trimmingCharacters(in: .whitespacesAndNewlines)
         guard let data = stringToSign.data(using: .utf8) else {
             throw .encodingFailure("failed to encode signature string as utf-8")
         }
         let signature = HMAC<SHA256>.authenticationCode(for: data, using: symmetricKey)
         return Data(signature).base64EncodedString()
-    }
-
-    public func computeBodyHash(data: Data) -> String {
-        let hash = SHA256.hash(data: data)
-        return Data(hash).base64EncodedString()
     }
 }
