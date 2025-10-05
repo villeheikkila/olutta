@@ -1,6 +1,5 @@
 import Foundation
 import Hummingbird
-import HummingbirdAuth
 import HummingbirdRedis
 import JWTKit
 import Logging
@@ -11,6 +10,15 @@ struct UnauthenticatedCommandDependencies {
     let pg: PostgresClient
     let jwtKeyCollection: JWTKeyCollection
     let appleService: SignInWithAppleService
+}
+
+struct AppRequestContext: RequestContext {
+    var coreContext: CoreRequestContextStorage
+    var identity: UserIdentity?
+
+    init(source: ApplicationRequestContextSource) {
+        self.coreContext = .init(source: source)
+    }
 }
 
 func makeRouter(pg: PostgresClient, persist: RedisPersistDriver, jwtKeyCollection: JWTKeyCollection, requestSignatureSalt _: String, appleService: SignInWithAppleService) -> Router<AppRequestContext> {
@@ -28,7 +36,7 @@ func makeRouter(pg: PostgresClient, persist: RedisPersistDriver, jwtKeyCollectio
             try await handleUnauthenticatedCommand(request: request, context: context, dependencies: .init(pg: pg, jwtKeyCollection: jwtKeyCollection, appleService: appleService))
         }))
     router.addRoutes(RouteCollection(context: AppRequestContext.self)
-        .add(middleware: JWTAuthenticator(jwtKeyCollection: jwtKeyCollection))
+        .add(middleware: AuthorizerMiddleware(jwtKeyCollection: jwtKeyCollection))
         .post("/v1/rpc/:command", use: { request, context in
             try await handleCommand(request: request, context: context, pg: pg, persist: persist, jwtKeyCollection: jwtKeyCollection)
         }))

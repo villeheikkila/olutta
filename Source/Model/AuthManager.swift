@@ -15,7 +15,7 @@ enum AuthManagerError: Error {
 
 @Observable
 final class AuthManager {
-    private let storage: SessionStorage
+    private let storage: Storage
     private let rpcClient: RPCClientProtocol
     private let logger = Logger(subsystem: "", category: "AuthenticationManager")
     // session
@@ -35,7 +35,7 @@ final class AuthManager {
 
     func initialize() async {
         do {
-            if let storedSession = try await storage.load() {
+            if let storedSession = try await storage.load(.init(rawValue: "session")!) {
                 if storedSession.isRefreshTokenExpired {
                     logger.info("stored session refresh token expired, clearing")
                     await clear()
@@ -230,7 +230,7 @@ actor KeychainSessionStorage: SessionStorage {
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
-    init(service: String, key: String = "token_session", accessGroup: String? = nil) {
+    init(service: String, key: String = "session", accessGroup: String? = nil) {
         keychain = Keychain(service: service, accessGroup: accessGroup)
         self.key = key
     }

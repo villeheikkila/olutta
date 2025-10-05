@@ -3,7 +3,6 @@ import APNSCore
 import AsyncHTTPClient
 import Foundation
 import Hummingbird
-import HummingbirdAuth
 import HummingbirdPostgres
 import HummingbirdRedis
 import JWTKit
@@ -14,8 +13,6 @@ import PostgresMigrations
 import PostgresNIO
 import RegexBuilder
 import ServiceLifecycle
-
-typealias AppRequestContext = BasicAuthRequestContext<UserIdentity>
 
 func makeServer(config: Config) async throws -> some ApplicationProtocol {
     // utils

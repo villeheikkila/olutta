@@ -56,6 +56,17 @@ class AppModel {
         )
     }
 
+    private static func getOrCreateDeviceId(keychain: Keychain) -> UUID {
+        let key = "device_id"
+        if let existingId = keychain.get(key),
+           let uuid = UUID(uuidString: existingId)
+        {
+            return uuid
+        }
+        keychain.set(UUID().uuidString, forKey: key)
+        return newId
+    }
+
     // methods available when unauthenticated
     func initializeAuthManager() async {
         await authManager.initialize()
