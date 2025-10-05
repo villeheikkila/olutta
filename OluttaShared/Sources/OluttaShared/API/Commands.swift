@@ -1,7 +1,7 @@
 import Foundation
 import HTTPTypes
 
-public protocol CommandMetadata {
+public protocol CommandMetadata: Sendable {
     associatedtype RequestType: Codable
     associatedtype ResponseType: Codable
 

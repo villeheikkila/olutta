@@ -56,17 +56,6 @@ class AppModel {
         )
     }
 
-    private static func getOrCreateDeviceId(keychain: Keychain) -> UUID {
-        let key = "device_id"
-        if let existingId = keychain.get(key),
-           let uuid = UUID(uuidString: existingId)
-        {
-            return uuid
-        }
-        keychain.set(UUID().uuidString, forKey: key)
-        return newId
-    }
-
     // methods available when unauthenticated
     func initializeAuthManager() async {
         await authManager.initialize()
@@ -86,7 +75,7 @@ class AppModel {
             try await authManager.signIn(authenticationType: authenticationType)
             status = .ready
         } catch {
-            logger.error("Failed to create anonymous user: \(error)")
+            logger.error("Failed to sign in \(error)")
             status = .error(error)
         }
     }
@@ -98,15 +87,11 @@ class AppModel {
 
     // authenticated methods
     func intializeAppData() async {
-        status = .loading
         do {
             let appData = try await rpcClient.call(GetAppDataCommand.self, with: .init())
             stores = appData.stores
-            status = .ready
         } catch {
             logger.error("Failed to load stores: \(error.localizedDescription)")
-            self.error = error
-            status = .error(error)
         }
     }
 

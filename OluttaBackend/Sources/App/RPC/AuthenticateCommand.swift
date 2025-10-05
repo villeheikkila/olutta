@@ -1,6 +1,4 @@
 import Foundation
-import Hummingbird
-import HummingbirdRedis
 import JWTKit
 import Logging
 import OluttaShared
@@ -9,15 +7,15 @@ import PostgresNIO
 extension AuthenticateCommand: UnauthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
-        dependencies: UnauthenticatedCommandDependencies,
+        deps: UnauthenticatedCommandDependencies,
         request: Request,
     ) async throws -> Response {
-        try await dependencies.pg.withTransaction { tx in
+        try await deps.pg.withTransaction { tx in
             let now = Date()
             // handle authentication provider
             let authResult = try await handleAuthProvider(
                 request: request,
-                dependencies: dependencies,
+                dependencies: deps,
                 tx: tx,
                 logger: logger,
                 now: now,
@@ -37,7 +35,7 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
                 exp: refreshTokenExpiry,
                 provider: authResult.refreshTokenProvider,
             )
-            let refreshToken = try await dependencies.jwtKeyCollection.sign(refreshTokenPayload)
+            let refreshToken = try await deps.jwtKeyCollection.sign(refreshTokenPayload)
             // create access token
             let accessTokenId = UUID()
             let accessTokenExpiry = now.addingTimeInterval(15 * 60) // 15 minutes
@@ -49,7 +47,7 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
                 exp: accessTokenExpiry,
                 provider: authResult.accessTokenProvider,
             )
-            let accessToken = try await dependencies.jwtKeyCollection.sign(accessTokenPayload)
+            let accessToken = try await deps.jwtKeyCollection.sign(accessTokenPayload)
             // return response
             return Response(
                 refreshToken: refreshToken,
@@ -77,12 +75,12 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
     ) async throws -> AuthProviderResult {
         switch request.authenticationType {
         case let .signInWithApple(payload):
-            let tokens = try await dependencies.appleService.sendTokenRequest(type: .authorizationCode(code: payload.authorizationCode))
+            let tokens = try await dependencies.siwaService.sendTokenRequest(type: .authorizationCode(code: payload.authorizationCode))
             guard let idTokenString = tokens.idToken else {
                 logger.error("missing id token when converting authorization code")
                 throw AuthenticateCommandError.missingIdToken
             }
-            let idToken = try await dependencies.appleService.verifyIdToken(idToken: idTokenString, nonce: payload.nonce)
+            let idToken = try await dependencies.siwaService.verifyIdToken(idToken: idTokenString, nonce: payload.nonce)
             let externalId = idToken.sub.value
             let existingUserId = try await UserRepository.getUserByAuthProvider(connection: tx, logger: logger, authProvider: .signInWithApple, externalId: externalId)
             let accessTokenExpiresAt = now.addingTimeInterval(tokens.expiresIn)

@@ -7,6 +7,7 @@ import HummingbirdPostgres
 import HummingbirdRedis
 import JWTKit
 import Logging
+import OluttaShared
 import OpenAI
 import PGMQ
 import PostgresMigrations
@@ -36,11 +37,21 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
         ),
         backgroundLogger: logger,
     )
-    let migrations = DatabaseMigrations()
-    for migration in allMigrations {
-        await migrations.add(migration)
+    // migrations
+    let postgresMigrations = DatabaseMigrations()
+    let migrations: [DatabaseMigration] = [
+        AdoptHummingbirdMigrations(),
+        ScheduleAvailabilityRefreshMigration(),
+        AddDeviceTableMigration(),
+        AddPushNotificationSubscriptionTableMigration(),
+        CreateUsersTableMigration(),
+        AddUserRefreshTokensMigration(),
+        AddAuthProvidersMigration(),
+    ]
+    for migration in migrations {
+        await postgresMigrations.add(migration)
     }
-    let postgresPersist = await PostgresPersistDriver(client: postgresClient, migrations: migrations, logger: logger)
+    let postgresPersist = await PostgresPersistDriver(client: postgresClient, migrations: postgresMigrations, logger: logger)
     // redis
     let redis = try RedisConnectionPoolService(
         .init(hostname: config.redisHost, port: config.redisPort),
@@ -83,10 +94,24 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
     ))
     await queueService.registerQueue(alkoQueue)
     await queueService.registerQueue(untappdQueue)
+    // commands
+    let unauthenticatedCommands: [String: any UnauthenticatedCommandExecutable.Type] = [
+        RefreshTokensCommand.name: RefreshTokensCommand.self,
+        AuthenticateCommand.name: AuthenticateCommand.self,
+    ]
+    let authenticatedCommands: [String: any AuthenticatedCommandExecutable.Type] = [
+        RefreshDeviceCommand.name: RefreshDeviceCommand.self,
+        GetUserCommand.name: GetUserCommand.self,
+        SubscribeToStoreCommand.name: SubscribeToStoreCommand.self,
+        UnsubscribeFromStoreCommand.name: UnsubscribeFromStoreCommand.self,
+        GetAppDataCommand.name: GetAppDataCommand.self,
+        GetProductsByStoreIdCommand.name: GetProductsByStoreIdCommand.self,
+    ]
     // router
     let jwtKeyCollection = JWTKeyCollection()
     await jwtKeyCollection.add(hmac: HMACKey(stringLiteral: config.jwtSecret), digestAlgorithm: .sha256, kid: JWKIdentifier(stringLiteral: config.serverName.lowercased()))
-    let router = makeRouter(pg: postgresClient, persist: persist, jwtKeyCollection: jwtKeyCollection, requestSignatureSalt: config.requestSignatureSalt, appleService: appleService)
+    let router = makeRouter(pg: postgresClient, persist: persist, jwtKeyCollection: jwtKeyCollection, requestSignatureSalt: config.requestSignatureSalt, appleService: appleService,
+                            unauthenticatedCommands: unauthenticatedCommands, authenticatedCommands: authenticatedCommands)
     // app
     logger.info("starting \(config.serverName) server on port \(config.host):\(config.port)...")
     var app = Application(
@@ -99,7 +124,7 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
         logger: logger,
     )
     app.beforeServerStarts {
-        try await migrations.apply(client: postgresClient, logger: logger, dryRun: false)
+        try await postgresMigrations.apply(client: postgresClient, logger: logger, dryRun: false)
     }
     return app
 }

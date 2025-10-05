@@ -8,7 +8,7 @@ struct Entrypoint: App {
 
     init() {
         let rpcClient = RPCClient(
-            baseURL: URL(string: "https://ade366dd4631.ngrok-free.app")!,
+            baseURL: URL(string: "https://bc989574ec9e.ngrok-free.app")!,
             secretKey: "a1b2c3d4e5f6g7h8i9j0k",
             rpcPath: "/v1/rpc",
         )
@@ -52,6 +52,9 @@ struct AuthenticatedState: View {
 
     var body: some View {
         StoreMap()
+            .task {
+                await appModel.intializeAppData()
+            }
             .onReceive(
                 for: .pushNotificationTokenObtained,
                 subject: PushNotificationManager.shared,

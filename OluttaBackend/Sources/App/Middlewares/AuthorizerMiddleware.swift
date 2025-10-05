@@ -26,12 +26,13 @@ struct AuthorizerMiddleware: RouterMiddleware {
     }
 
     private func authenticate(request: Request, context: AppRequestContext) async throws -> UserIdentity? {
-        guard let accessToken = request.headers[.authorization],
-              accessToken.hasPrefix("Bearer ")
+        guard let authorizationHeader = request.headers[.authorization],
+              authorizationHeader.hasPrefix("Bearer ")
         else {
             context.logger.warning("call made to authorized route without authorization header")
             throw HTTPError(.unauthorized)
         }
+        let accessToken = authorizationHeader.replacingOccurrences(of: "Bearer ", with: "")
         let payload: AccessTokenPayload
         do {
             payload = try await jwtKeyCollection.verify(accessToken, as: AccessTokenPayload.self)

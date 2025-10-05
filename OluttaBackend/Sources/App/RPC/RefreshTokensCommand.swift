@@ -1,6 +1,5 @@
 import Foundation
 import Hummingbird
-import HummingbirdRedis
 import JWTKit
 import Logging
 import OluttaShared
@@ -9,16 +8,16 @@ import PostgresNIO
 extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
-        dependencies: UnauthenticatedCommandDependencies,
+        deps: UnauthenticatedCommandDependencies,
         request: Request,
     ) async throws -> Response {
         // verify payload
         let payload = try await verifyRefreshToken(
             refreshToken: request.refreshToken,
-            jwtKeyCollection: dependencies.jwtKeyCollection,
+            jwtKeyCollection: deps.jwtKeyCollection,
             logger: logger,
         )
-        return try await dependencies.pg.withTransaction { tx in
+        return try await deps.pg.withTransaction { tx in
             // check that refresh token has not been revoked
             let refreshTokenVerificationRow = try await UserRepository.getRefreshTokenById(connection: tx, logger: logger, refreshTokenId: payload.sub)
             guard let refreshTokenVerificationRow else {
@@ -33,7 +32,7 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
             // refresh third party auth provider tokens
             let authProviders = try await refreshAuthProviderTokens(
                 payload: payload,
-                dependencies: dependencies,
+                dependencies: deps,
                 now: now,
             )
             // create new refresh token
@@ -53,7 +52,7 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
                 exp: refreshTokenExpiry,
                 provider: authProviders.refreshTokenProvider,
             )
-            let refreshToken = try await dependencies.jwtKeyCollection.sign(refreshTokenPayload)
+            let refreshToken = try await deps.jwtKeyCollection.sign(refreshTokenPayload)
             // create new access token
             let accessTokenId = UUID()
             let accessTokenExpiry = now.addingTimeInterval(15 * 60) // 15 minutes
@@ -65,7 +64,7 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
                 exp: accessTokenExpiry,
                 provider: authProviders.accessTokenProvider,
             )
-            let accessToken = try await dependencies.jwtKeyCollection.sign(accessTokenPayload)
+            let accessToken = try await deps.jwtKeyCollection.sign(accessTokenPayload)
             // return response
             return Response(
                 accessToken: accessToken,
@@ -101,7 +100,7 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
     ) async throws -> AuthProviders {
         switch payload.provider {
         case let .signInWithApple(claims):
-            let tokens = try await dependencies.appleService.sendTokenRequest(type: .refreshToken(refreshToken: claims.refreshToken))
+            let tokens = try await dependencies.siwaService.sendTokenRequest(type: .refreshToken(refreshToken: claims.refreshToken))
             let accessTokenExpiresAt = now.addingTimeInterval(tokens.expiresIn)
             let refreshTokenExpiresAt = now.addingTimeInterval(180 * 24 * 60 * 60) // 6 months - each refresh extends the expiry
             return AuthProviders(

@@ -193,7 +193,7 @@ struct AppleAuthToken: JWTPayload {
     init(clientId: String, teamId: String) {
         iss = IssuerClaim(value: teamId)
         iat = IssuedAtClaim(value: Date())
-        exp = ExpirationClaim(value: Date().addingTimeInterval(15777000))
+        exp = ExpirationClaim(value: Date().addingTimeInterval(15_777_000))
         aud = AudienceClaim(value: "https://appleid.apple.com")
         sub = SubjectClaim(value: clientId)
     }

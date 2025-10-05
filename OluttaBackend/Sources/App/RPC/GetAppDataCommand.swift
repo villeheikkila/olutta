@@ -1,5 +1,4 @@
 import Foundation
-import HummingbirdRedis
 import Logging
 import OluttaShared
 import PostgresNIO
@@ -8,10 +7,10 @@ extension GetAppDataCommand: AuthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
         identity _: UserIdentity,
-        pg: PostgresClient,
+        deps: AuthenticatedCommandDependencies,
         request _: Request,
     ) async throws -> Response {
-        let stores = try await pg.withTransaction { tx in
+        let stores = try await deps.pg.withConnection { tx in
             try await AlkoRepository.getStores(tx, logger: logger)
         }
         let storeEntities: [StoreEntity] = stores.map { store in

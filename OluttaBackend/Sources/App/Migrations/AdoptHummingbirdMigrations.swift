@@ -3,13 +3,11 @@ import PostgresNIO
 
 struct AdoptHummingbirdMigrations: DatabaseMigration {
     func apply(connection: PostgresConnection, logger: Logger) async throws {
-        // Enable extensions
         try await connection.query(
             "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";",
             logger: logger,
         )
 
-        // Enable PGMQ queues
         try await connection.query(
             "SELECT pgmq.create('untappd');",
             logger: logger,

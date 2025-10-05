@@ -7,10 +7,10 @@ extension SubscribeToStoreCommand: AuthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
         identity: UserIdentity,
-        pg: PostgresClient,
+        deps: AuthenticatedCommandDependencies,
         request: Request,
     ) async throws -> Response {
-        try await pg.withTransaction { tx in
+        try await deps.pg.withTransaction { tx in
             try await UserRepository.addPushNotificationSubscription(
                 connection: tx,
                 deviceId: request.deviceId,

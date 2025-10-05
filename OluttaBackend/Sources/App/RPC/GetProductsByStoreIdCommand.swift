@@ -7,10 +7,10 @@ extension GetProductsByStoreIdCommand: AuthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
         identity _: UserIdentity,
-        pg: PostgresClient,
+        deps: AuthenticatedCommandDependencies,
         request: Request,
     ) async throws -> Response {
-        let products = try await pg.withTransaction { tx in
+        let products = try await deps.pg.withTransaction { tx in
             try await AlkoRepository.getProductsByStoreId(tx, logger: logger, id: request.storeId)
         }
         let productEntities = products.map {

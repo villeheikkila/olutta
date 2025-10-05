@@ -24,7 +24,7 @@ struct SignInWithAppleButtonView: View {
         case let .success(asAuthorization):
             await handleSuccess(asAuthorization: asAuthorization)
         case let .failure(error):
-            logger.error(error.localizedDescription)
+            logger.error("\(error.localizedDescription)")
         }
     }
 
