@@ -5,8 +5,9 @@ import JWTKit
 import NIOFoundationCompat
 import OluttaShared
 
-struct UserIdentity: Sendable {
+struct UserIdentity: Sendable, Codable {
     let userId: UUID
+    let deviceId: UUID
 }
 
 struct AuthorizerMiddleware: RouterMiddleware {
@@ -39,6 +40,6 @@ struct AuthorizerMiddleware: RouterMiddleware {
             context.logger.warning("invalid jwt token: \(error.localizedDescription)")
             return nil
         }
-        return UserIdentity(userId: payload.userId)
+        return payload.identity
     }
 }

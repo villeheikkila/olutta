@@ -48,6 +48,7 @@ func makeServer(config: Config) async throws -> some ApplicationProtocol {
         CreateUsersTableMigration(),
         AddUserRefreshTokensMigration(),
         AddAuthProvidersMigration(),
+        AddDeviceIdToUserRefreshTokensMigration(),
     ]
     for migration in migrations {
         await postgresMigrations.add(migration)

@@ -21,11 +21,12 @@ enum UserRepository {
         connection: PostgresConnection,
         logger: Logger,
         userId: UUID,
+        deviceId: UUID,
         expiresAt: Date,
     ) async throws -> UUID {
         let result = try await connection.query("""
-            INSERT INTO public.user_refresh_tokens (user_id, expires_at)
-            VALUES (\(userId), \(expiresAt))
+            INSERT INTO public.user_refresh_tokens (user_id, device_id, expires_at)
+            VALUES (\(userId), \(deviceId), \(expiresAt))
             RETURNING refresh_token_id
         """, logger: logger)
 
@@ -39,15 +40,15 @@ enum UserRepository {
         connection: PostgresConnection,
         logger: Logger,
         refreshTokenId: UUID,
-    ) async throws -> (userId: UUID, revokedAt: Date?)? {
+    ) async throws -> (userId: UUID, deviceId: UUID, revokedAt: Date?)? {
         let result = try await connection.query("""
-            SELECT user_id, revoked_at
+            SELECT user_id, device_id, revoked_at
             FROM public.user_refresh_tokens
             WHERE refresh_token_id = \(refreshTokenId)
         """, logger: logger)
 
-        for try await (userId, revokedAt) in result.decode((UUID, Date?).self) {
-            return (userId: userId, revokedAt: revokedAt)
+        for try await (userId, deviceId, revokedAt) in result.decode((UUID, UUID, Date?).self) {
+            return (userId: userId, deviceId: deviceId, revokedAt: revokedAt)
         }
         return nil
     }

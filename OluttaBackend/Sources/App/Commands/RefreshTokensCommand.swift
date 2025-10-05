@@ -5,6 +5,7 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
+extension RefreshTokensCommand: @retroactive CommandExecutable {}
 extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
@@ -58,11 +59,11 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
             let accessTokenExpiry = now.addingTimeInterval(15 * 60) // 15 minutes
             let accessTokenPayload = AccessTokenPayload(
                 sub: accessTokenId,
-                userId: refreshTokenVerificationRow.userId,
                 refreshTokenId: newRefreshTokenId,
                 iat: now,
                 exp: accessTokenExpiry,
                 provider: authProviders.accessTokenProvider,
+                identity: .init(userId: refreshTokenVerificationRow.userId, deviceId: refreshTokenVerificationRow.deviceId),
             )
             let accessToken = try await deps.jwtKeyCollection.sign(accessTokenPayload)
             // return response

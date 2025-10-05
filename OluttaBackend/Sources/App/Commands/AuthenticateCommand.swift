@@ -28,7 +28,7 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
             }
             // create refresh token
             let refreshTokenExpiry = now.addingTimeInterval(365 * 24 * 60 * 60) // 1 year
-            let refreshTokenId = try await UserRepository.createRefreshToken(connection: tx, logger: logger, userId: userId, expiresAt: refreshTokenExpiry)
+            let refreshTokenId = try await UserRepository.createRefreshToken(connection: tx, logger: logger, userId: userId, deviceId: request.deviceId, expiresAt: refreshTokenExpiry)
             let refreshTokenPayload = RefreshTokenPayload(
                 sub: refreshTokenId,
                 iat: now,
@@ -41,11 +41,11 @@ extension AuthenticateCommand: UnauthenticatedCommandExecutable {
             let accessTokenExpiry = now.addingTimeInterval(15 * 60) // 15 minutes
             let accessTokenPayload = AccessTokenPayload(
                 sub: accessTokenId,
-                userId: userId,
                 refreshTokenId: refreshTokenId,
                 iat: now,
                 exp: accessTokenExpiry,
                 provider: authResult.accessTokenProvider,
+                identity: .init(userId: userId, deviceId: request.deviceId),
             )
             let accessToken = try await deps.jwtKeyCollection.sign(accessTokenPayload)
             // return response

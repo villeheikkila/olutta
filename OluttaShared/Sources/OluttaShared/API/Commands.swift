@@ -205,9 +205,11 @@ public struct AuthenticateCommand: UnauthenticatedCommand {
 
     public struct Request: Codable, Sendable {
         public let authenticationType: AuthenticationType
+        public let deviceId: UUID
 
-        public init(authenticationType: AuthenticationType) {
+        public init(authenticationType: AuthenticationType, deviceId: UUID) {
             self.authenticationType = authenticationType
+            self.deviceId = deviceId
         }
     }
 

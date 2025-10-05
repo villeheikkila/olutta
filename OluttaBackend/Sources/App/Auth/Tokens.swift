@@ -3,26 +3,26 @@ import JWTKit
 
 struct AccessTokenPayload: JWTPayload, Codable {
     let sub: UUID
-    let userId: UUID
     let refreshTokenId: UUID
     let iat: Date
     let exp: Date
     let provider: AuthProvider?
+    let identity: UserIdentity
 
     init(
         sub: UUID,
-        userId: UUID,
         refreshTokenId: UUID,
         iat: Date,
         exp: Date,
         provider: AuthProvider? = nil,
+        identity: UserIdentity,
     ) {
         self.sub = sub
-        self.userId = userId
         self.refreshTokenId = refreshTokenId
         self.iat = iat
         self.exp = exp
         self.provider = provider
+        self.identity = identity
     }
 
     func verify(using _: some JWTAlgorithm) throws {

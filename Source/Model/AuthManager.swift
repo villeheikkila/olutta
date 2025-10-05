@@ -33,6 +33,9 @@ final class AuthManager {
         self.rpcClient = rpcClient
     }
 
+    // TODO: make this real
+    let deviceId = UUID(uuidString: "6ba7b810-9dad-11d1-80b4-00c04fd430c8")!
+
     func initialize() async {
         do {
             if let storedSession = try await storage.load() {
@@ -59,7 +62,7 @@ final class AuthManager {
     func signIn(authenticationType: AuthenticateCommand.AuthenticationType) async throws(RPCError) {
         let response = try await rpcClient.call(
             AuthenticateCommand.self,
-            with: .init(authenticationType: authenticationType),
+            with: .init(authenticationType: authenticationType, deviceId: deviceId),
         )
         await setSession(
             accessToken: response.accessToken,

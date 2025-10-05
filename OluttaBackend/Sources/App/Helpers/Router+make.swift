@@ -34,7 +34,7 @@ func makeRouter(
 ) -> Router<AppRequestContext> {
     let router = Router(context: AppRequestContext.self)
     let commandMap = Dictionary(
-        uniqueKeysWithValues: commands.map { ($0.name, $0) }
+        uniqueKeysWithValues: commands.map { ($0.name, $0) },
     )
     router.addMiddleware {
         LogRequestsMiddleware(.debug)
