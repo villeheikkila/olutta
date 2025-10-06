@@ -8,20 +8,20 @@ protocol RPCClientProtocol {
     @discardableResult
     func call<C: CommandMetadata>(
         _ commandType: C.Type,
-        with request: C.RequestType,
+        with request: C.Request,
         headers: [HTTPField],
         authenticated: Bool,
-    ) async throws(RPCError) -> C.ResponseType
+    ) async throws(RPCError) -> C.Response
 }
 
 extension RPCClientProtocol {
     @discardableResult
     func call<C: CommandMetadata>(
         _ commandType: C.Type,
-        with request: C.RequestType,
+        with request: C.Request,
         headers: [HTTPField] = [],
         authenticated: Bool = false,
-    ) async throws(RPCError) -> C.ResponseType {
+    ) async throws(RPCError) -> C.Response {
         try await call(commandType, with: request, headers: headers, authenticated: authenticated)
     }
 }
@@ -56,10 +56,10 @@ final class RPCClient: RPCClientProtocol {
     @discardableResult
     func call<C: CommandMetadata>(
         _: C.Type,
-        with request: C.RequestType,
+        with request: C.Request,
         headers: [HTTPField] = [],
         authenticated _: Bool = false,
-    ) async throws(RPCError) -> C.ResponseType {
+    ) async throws(RPCError) -> C.Response {
         try await post(
             path: "\(rpcPath)/\(C.name)",
             body: request,
@@ -180,9 +180,9 @@ final class AuthenticatedRPCClient: RPCClientProtocol {
     @discardableResult
     func call<C: CommandMetadata>(
         _: C.Type,
-        with request: C.RequestType,
+        with request: C.Request,
         headers: [HTTPField] = [],
-    ) async throws(RPCError) -> C.ResponseType {
+    ) async throws(RPCError) -> C.Response {
         let token: String?
         do {
             token = try await authManager.getValidAccessToken()
@@ -204,8 +204,8 @@ final class AuthenticatedRPCClient: RPCClientProtocol {
 
     private func handleUnauthorizedAndRetry<C: CommandMetadata>(
         _: C.Type,
-        with request: C.RequestType,
-    ) async throws(RPCError) -> C.ResponseType {
+        with request: C.Request,
+    ) async throws(RPCError) -> C.Response {
         do {
             // attempt to refresh the token
             let newSession = try await authManager.forceRefresh()

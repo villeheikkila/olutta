@@ -5,7 +5,6 @@ import Logging
 import OluttaShared
 import PostgresNIO
 
-extension RefreshTokensCommand: @retroactive CommandExecutable {}
 extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
     static func execute(
         logger: Logger,
@@ -21,10 +20,17 @@ extension RefreshTokensCommand: UnauthenticatedCommandExecutable {
         return try await deps.pg.withTransaction { tx in
             // check that refresh token has not been revoked
             let refreshTokenVerificationRow = try await UserRepository.getRefreshTokenById(connection: tx, logger: logger, refreshTokenId: payload.sub)
+            // check that refresh token has corresponding row in the database
             guard let refreshTokenVerificationRow else {
                 logger.warning("attempt to refresh access token without corresponding row")
                 throw HTTPError(.unauthorized)
             }
+            // check that refresh token belongs to the device
+            if refreshTokenVerificationRow.deviceId != request.deviceId {
+                logger.warning("attempt to refresh access token with refresh token for a different device")
+                throw HTTPError(.unauthorized)
+            }
+            // check that refresh token has not been revoked
             if refreshTokenVerificationRow.revokedAt != nil {
                 logger.warning("attempt to refresh access token with revoked refresh token")
                 throw HTTPError(.unauthorized)

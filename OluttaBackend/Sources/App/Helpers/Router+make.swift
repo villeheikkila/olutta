@@ -27,6 +27,19 @@ struct AppRequestContext: RequestContext {
     }
 }
 
+// identity
+
+struct UserIdentity: Sendable, Codable {
+    let userId: UUID
+    let deviceId: UUID
+}
+
+// command
+
+public protocol CommandExecutable: CommandMetadata {
+    static var authenticated: Bool { get }
+}
+
 // router
 func makeRouter(
     deps: CommandDependencies,
@@ -106,8 +119,8 @@ protocol AuthenticatedCommandExecutable: AuthenticatedCommand, CommandExecutable
         logger: Logger,
         identity: UserIdentity,
         deps: CommandDependencies,
-        request: RequestType,
-    ) async throws -> ResponseType
+        request: Request,
+    ) async throws -> Response
 }
 
 private func executeAuthenticated<C: AuthenticatedCommandExecutable>(
@@ -117,7 +130,7 @@ private func executeAuthenticated<C: AuthenticatedCommandExecutable>(
     identity: UserIdentity,
     deps: CommandDependencies,
 ) async throws -> Response {
-    let requestData = try await request.decode(as: C.RequestType.self, context: context)
+    let requestData = try await request.decode(as: C.Request.self, context: context)
     return try await withCache(
         command: C.self,
         request: requestData,
@@ -140,8 +153,8 @@ protocol UnauthenticatedCommandExecutable: UnauthenticatedCommand, CommandExecut
     static func execute(
         logger: Logger,
         deps: CommandDependencies,
-        request: RequestType,
-    ) async throws -> ResponseType
+        request: Request,
+    ) async throws -> Response
 }
 
 private func executeUnauthenticated<C: UnauthenticatedCommandExecutable>(
@@ -150,7 +163,7 @@ private func executeUnauthenticated<C: UnauthenticatedCommandExecutable>(
     context: AppRequestContext,
     deps: CommandDependencies,
 ) async throws -> Response {
-    let requestData = try await request.decode(as: C.RequestType.self, context: context)
+    let requestData = try await request.decode(as: C.Request.self, context: context)
     let body = try await C.execute(
         logger: context.logger,
         deps: deps,
@@ -166,23 +179,23 @@ enum CachePolicy: Sendable {
 }
 
 protocol CacheableCommand: CommandMetadata {
-    static func cachePolicy(for request: RequestType) -> CachePolicy
+    static func cachePolicy(for request: Request) -> CachePolicy
 }
 
 extension CommandMetadata {
-    static func cachePolicy(for _: RequestType) -> CachePolicy {
+    static func cachePolicy(for _: Request) -> CachePolicy {
         .noCache
     }
 }
 
 private func withCache<C: CommandMetadata>(
     command _: C.Type,
-    request: C.RequestType,
+    request: C.Request,
     logger: Logger,
     persist: RedisPersistDriver,
     decoder: JSONDecoder,
     encoder: JSONEncoder,
-    execute: () async throws -> C.ResponseType,
+    execute: () async throws -> C.Response,
 ) async throws -> Response {
     let policy = C.cachePolicy(for: request)
     // early return
@@ -195,7 +208,7 @@ private func withCache<C: CommandMetadata>(
     do {
         if let cachedData = try await persist.get(key: cacheKey, as: Data.self) {
             logger.debug("loaded \(C.name) result from cache", metadata: ["key": .string(cacheKey)])
-            let cachedResponse = try decoder.decode(C.ResponseType.self, from: cachedData)
+            let cachedResponse = try decoder.decode(C.Response.self, from: cachedData)
             return try Response.makeJSONResponse(body: cachedResponse)
         }
     } catch {

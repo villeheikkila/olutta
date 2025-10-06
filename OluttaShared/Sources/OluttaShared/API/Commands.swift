@@ -2,14 +2,10 @@ import Foundation
 import HTTPTypes
 
 public protocol CommandMetadata: Sendable {
-    associatedtype RequestType: Codable
-    associatedtype ResponseType: Codable
+    associatedtype Request: Codable
+    associatedtype Response: Codable
 
     static var name: String { get }
-    static var authenticated: Bool { get }
-}
-
-public protocol CommandExecutable: CommandMetadata {
     static var authenticated: Bool { get }
 }
 
@@ -26,8 +22,6 @@ public extension UnauthenticatedCommand {
 }
 
 public struct GetAppDataCommand: AuthenticatedCommand {
-    public typealias RequestType = Request
-    public typealias ResponseType = Response
     public static let name = "get_stores"
 
     public struct Request: Codable, Sendable {
@@ -44,8 +38,6 @@ public struct GetAppDataCommand: AuthenticatedCommand {
 }
 
 public struct GetProductsByStoreIdCommand: AuthenticatedCommand {
-    public typealias RequestType = Request
-    public typealias ResponseType = Response
     public static let name = "get_products_by_store_id"
 
     public struct Request: Codable, Sendable {
@@ -66,28 +58,22 @@ public struct GetProductsByStoreIdCommand: AuthenticatedCommand {
 }
 
 public struct RefreshDeviceCommand: AuthenticatedCommand {
-    public typealias RequestType = Request
-    public typealias ResponseType = Response
     public static let name = "refresh_device"
+
+    public struct Request: Codable, Sendable {
+        public let pushNotificationToken: String
+
+        public init(pushNotificationToken: String) {
+            self.pushNotificationToken = pushNotificationToken
+        }
+    }
 
     public struct Response: Codable, Sendable {
         public init() {}
     }
-
-    public struct Request: Codable, Sendable {
-        public let pushNotificationToken: String
-        public let deviceId: UUID
-
-        public init(pushNotificationToken: String, deviceId: UUID) {
-            self.pushNotificationToken = pushNotificationToken
-            self.deviceId = deviceId
-        }
-    }
 }
 
 public struct GetUserCommand: AuthenticatedCommand {
-    public typealias RequestType = Request
-    public typealias ResponseType = Response
     public static let name = "get_user"
 
     public struct Request: Codable, Sendable {
@@ -95,11 +81,9 @@ public struct GetUserCommand: AuthenticatedCommand {
     }
 
     public struct Response: Codable, Sendable {
-        public let id: UUID
         public let subscriptions: [Subscription]
 
-        public init(id: UUID, subscriptions: [Subscription]) {
-            self.id = id
+        public init(subscriptions: [Subscription]) {
             self.subscriptions = subscriptions
         }
 
@@ -114,17 +98,13 @@ public struct GetUserCommand: AuthenticatedCommand {
 }
 
 public struct SubscribeToStoreCommand: AuthenticatedCommand {
-    public typealias RequestType = Request
-    public typealias ResponseType = Response
     public static let name = "subscribe_to_store"
 
     public struct Request: Codable, Sendable {
         public let storeId: UUID
-        public let deviceId: UUID
 
-        public init(storeId: UUID, deviceId: UUID) {
+        public init(storeId: UUID) {
             self.storeId = storeId
-            self.deviceId = deviceId
         }
     }
 
@@ -134,17 +114,13 @@ public struct SubscribeToStoreCommand: AuthenticatedCommand {
 }
 
 public struct UnsubscribeFromStoreCommand: AuthenticatedCommand {
-    public typealias RequestType = Request
-    public typealias ResponseType = Response
     public static let name = "unsusbscribe_from_store"
 
     public struct Request: Codable, Sendable {
         public let storeId: UUID
-        public let deviceId: UUID
 
-        public init(storeId: UUID, deviceId: UUID) {
+        public init(storeId: UUID) {
             self.storeId = storeId
-            self.deviceId = deviceId
         }
     }
 
@@ -154,15 +130,15 @@ public struct UnsubscribeFromStoreCommand: AuthenticatedCommand {
 }
 
 public struct RefreshTokensCommand: UnauthenticatedCommand {
-    public typealias RequestType = Request
-    public typealias ResponseType = Response
     public static let name = "refresh_access_token"
 
     public struct Request: Codable, Sendable {
         public let refreshToken: String
+        public let deviceId: UUID
 
-        public init(refreshToken: String) {
+        public init(refreshToken: String, deviceId: UUID) {
             self.refreshToken = refreshToken
+            self.deviceId = deviceId
         }
     }
 
@@ -182,8 +158,6 @@ public struct RefreshTokensCommand: UnauthenticatedCommand {
 }
 
 public struct AuthenticateCommand: UnauthenticatedCommand {
-    public typealias RequestType = Request
-    public typealias ResponseType = Response
     public static let name = "create_anonymous_user"
 
     public enum AuthenticationType: Codable, Sendable {

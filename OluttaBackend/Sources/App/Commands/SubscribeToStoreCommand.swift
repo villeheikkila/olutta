@@ -13,7 +13,7 @@ extension SubscribeToStoreCommand: AuthenticatedCommandExecutable {
         try await deps.pg.withTransaction { tx in
             try await UserRepository.addPushNotificationSubscription(
                 connection: tx,
-                deviceId: request.deviceId,
+                deviceId: identity.deviceId,
                 storeId: request.storeId,
                 userId: identity.userId,
                 logger: logger,

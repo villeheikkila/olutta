@@ -41,14 +41,12 @@ class AppModel {
     let authManager: AuthManager
     let rpcClient: AuthenticatedRPCClient
 
-    init(rpcClient: RPCClientProtocol, keychain _: Keychain) {
+    init(rpcClient: RPCClientProtocol, keychain: Keychain) {
         // initialize session storage
-        let sessionStorage = KeychainSessionStorage(
-            service: Bundle.main.bundleIdentifier ?? "com.bytesized.solutions.olutta",
-            key: "token_session",
-        )
+        let sessionStorage = KeychainSessionStorage(keychain: keychain)
+        let deviceIdentifierStorage = KeychainDeviceIdentifierStorage(keychain: keychain)
         // auth
-        authManager = AuthManager(storage: sessionStorage, rpcClient: rpcClient)
+        authManager = AuthManager(storage: sessionStorage, deviceIdentifierStorage: deviceIdentifierStorage, rpcClient: rpcClient)
         // rpc
         self.rpcClient = AuthenticatedRPCClient(
             rpcClient: rpcClient,
@@ -96,11 +94,10 @@ class AppModel {
     }
 
     func updatePushNotificationToken(_ token: String) async {
-        let deviceId = UUID()
         do {
             try await rpcClient.call(
                 RefreshDeviceCommand.self,
-                with: .init(pushNotificationToken: token, deviceId: deviceId),
+                with: .init(pushNotificationToken: token),
             )
         } catch {
             logger.error("Failed to update push notification token: \(error)")
@@ -163,12 +160,11 @@ class AppModel {
     // subscriptions
     func toggleSubscription() async throws {
         guard let selectedStore else { return }
-        let deviceId = UUID()
         if subscribedStoreIds.contains(selectedStore.id) {
             do {
                 try await rpcClient.call(
                     UnsubscribeFromStoreCommand.self,
-                    with: .init(storeId: selectedStore.id, deviceId: deviceId),
+                    with: .init(storeId: selectedStore.id),
                 )
                 subscribedStoreIds = subscribedStoreIds.filter { $0 != selectedStore.id }
             } catch {
@@ -179,7 +175,7 @@ class AppModel {
             do {
                 try await rpcClient.call(
                     SubscribeToStoreCommand.self,
-                    with: .init(storeId: selectedStore.id, deviceId: deviceId),
+                    with: .init(storeId: selectedStore.id),
                 )
                 subscribedStoreIds.append(selectedStore.id)
             } catch {

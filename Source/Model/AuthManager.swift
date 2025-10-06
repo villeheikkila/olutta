@@ -10,12 +10,14 @@ enum AuthStatus: Equatable, Sendable {
 enum AuthManagerError: Error {
     case refreshTokenExpired
     case notAuthenticated
+    case refreshingTokensWithoutDeviceId
     case tokenRefreshFailed(Error)
 }
 
 @Observable
 final class AuthManager {
-    private let storage: SessionStorage
+    private let sessionStorage: SessionStorage
+    private let deviceIdentifierStorage: DeviceIdentifierStorage
     private let rpcClient: RPCClientProtocol
     private let logger = Logger(subsystem: "", category: "AuthenticationManager")
     // session
@@ -28,17 +30,15 @@ final class AuthManager {
     // status
     private(set) var authStatus: AuthStatus = .unauthenticated
 
-    init(storage: SessionStorage, rpcClient: RPCClientProtocol) {
-        self.storage = storage
+    init(storage: SessionStorage, deviceIdentifierStorage: DeviceIdentifierStorage, rpcClient: RPCClientProtocol) {
+        sessionStorage = storage
+        self.deviceIdentifierStorage = deviceIdentifierStorage
         self.rpcClient = rpcClient
     }
 
-    // TODO: make this real
-    let deviceId = UUID(uuidString: "6ba7b810-9dad-11d1-80b4-00c04fd430c8")!
-
     func initialize() async {
         do {
-            if let storedSession = try await storage.load() {
+            if let storedSession = try sessionStorage.load() {
                 if storedSession.isRefreshTokenExpired {
                     logger.info("stored session refresh token expired, clearing")
                     await clear()
@@ -59,7 +59,9 @@ final class AuthManager {
     }
 
     // public
-    func signIn(authenticationType: AuthenticateCommand.AuthenticationType) async throws(RPCError) {
+    func signIn(authenticationType: AuthenticateCommand.AuthenticationType) async throws {
+        // device id is valid for a device as long as it is not replaced by signing in again
+        let deviceId = try deviceIdentifierStorage.create()
         let response = try await rpcClient.call(
             AuthenticateCommand.self,
             with: .init(authenticationType: authenticationType, deviceId: deviceId),
@@ -118,7 +120,7 @@ final class AuthManager {
         )
         currentSession = session
         do {
-            try await storage.save(session)
+            try await sessionStorage.save(session)
             authStatus = .authenticated
             logger.info("Session saved and authenticated")
         } catch {
@@ -132,7 +134,8 @@ final class AuthManager {
         currentSession = nil
         stopAutoRefresh()
         do {
-            try await storage.delete()
+            try sessionStorage.delete()
+            try deviceIdentifierStorage.delete()
         } catch {
             logger.error("failed to delete session from storage: \(error.localizedDescription)")
         }
@@ -150,7 +153,7 @@ final class AuthManager {
             do {
                 let newSession = try await performTokenRefresh(refreshToken: refreshToken)
                 currentSession = newSession
-                try? await storage.save(newSession)
+                try? await sessionStorage.save(newSession)
                 authStatus = .authenticated
                 logger.info("token refresh successful")
                 return newSession
@@ -163,11 +166,13 @@ final class AuthManager {
         return try await inFlightRefreshTask?.value
     }
 
-    private func performTokenRefresh(refreshToken: String) async throws(RPCError) -> TokenSession {
-        let refreshRequest = RefreshTokensCommand.RequestType(refreshToken: refreshToken)
-        let response: RefreshTokensCommand.ResponseType = try await rpcClient.call(
+    private func performTokenRefresh(refreshToken: String) async throws -> TokenSession {
+        guard let deviceId = try deviceIdentifierStorage.load() else {
+            throw AuthManagerError.refreshingTokensWithoutDeviceId
+        }
+        let response: RefreshTokensCommand.Response = try await rpcClient.call(
             RefreshTokensCommand.self,
-            with: refreshRequest,
+            with: .init(refreshToken: refreshToken, deviceId: deviceId),
         )
         return TokenSession(
             accessToken: response.accessToken,
@@ -223,19 +228,18 @@ struct TokenSession: Sendable, Codable {
 
 protocol SessionStorage: Sendable {
     func save(_ session: TokenSession) async throws
-    func load() async throws -> TokenSession?
-    func delete() async throws
+    func load() throws -> TokenSession?
+    func delete() throws
 }
 
-actor KeychainSessionStorage: SessionStorage {
+struct KeychainSessionStorage: SessionStorage {
     private let keychain: Keychain
-    private let key: String
+    private let key = "session"
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
-    init(service: String, key: String = "session", accessGroup: String? = nil) {
-        keychain = Keychain(service: service, accessGroup: accessGroup)
-        self.key = key
+    init(keychain: Keychain) {
+        self.keychain = keychain
     }
 
     func save(_ session: TokenSession) async throws {
@@ -243,7 +247,7 @@ actor KeychainSessionStorage: SessionStorage {
         try keychain.set(data, forKey: key)
     }
 
-    func load() async throws -> TokenSession? {
+    func load() throws -> TokenSession? {
         do {
             let data = try keychain.data(forKey: key)
             return try decoder.decode(TokenSession.self, from: data)
@@ -252,7 +256,41 @@ actor KeychainSessionStorage: SessionStorage {
         }
     }
 
-    func delete() async throws {
+    func delete() throws {
+        do {
+            try keychain.deleteItem(forKey: key)
+        } catch let error as KeychainError where error.code == .itemNotFound {}
+    }
+}
+
+protocol DeviceIdentifierStorage: Sendable {
+    func create() throws -> UUID
+    func load() throws -> UUID?
+    func delete() throws
+}
+
+struct KeychainDeviceIdentifierStorage: DeviceIdentifierStorage {
+    private let keychain: Keychain
+    private let key = "deviceId"
+    private let decoder = JSONDecoder()
+
+    init(keychain: Keychain) {
+        self.keychain = keychain
+    }
+
+    func load() throws -> UUID? {
+        let data = try keychain.data(forKey: key)
+        return try decoder.decode(UUID.self, from: data)
+    }
+
+    func create() throws -> UUID {
+        let id = UUID()
+        let data = id.uuidString.data(using: .utf8)!
+        try keychain.set(data, forKey: key)
+        return id
+    }
+
+    func delete() throws {
         do {
             try keychain.deleteItem(forKey: key)
         } catch let error as KeychainError where error.code == .itemNotFound {}

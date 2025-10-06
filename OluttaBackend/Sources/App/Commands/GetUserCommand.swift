@@ -15,7 +15,6 @@ extension GetUserCommand: AuthenticatedCommandExecutable {
             let user = try await UserRepository.getUser(connection: tx, logger: logger, userId: identity.userId)
             guard let user else { throw HTTPError(.notFound) }
             return Response(
-                id: user.id,
                 subscriptions: user.subscriptions.map { .init(storeId: $0.storeId) },
             )
         }

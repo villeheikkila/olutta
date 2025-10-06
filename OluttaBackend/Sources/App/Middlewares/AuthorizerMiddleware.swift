@@ -5,11 +5,6 @@ import JWTKit
 import NIOFoundationCompat
 import OluttaShared
 
-struct UserIdentity: Sendable, Codable {
-    let userId: UUID
-    let deviceId: UUID
-}
-
 struct AuthorizerMiddleware: RouterMiddleware {
     let jwtKeyCollection: JWTKeyCollection
 
