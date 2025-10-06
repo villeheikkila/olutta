@@ -6,7 +6,7 @@ import OluttaShared
 struct StoreAnnotation: Identifiable, CoordinateIdentifiable, Hashable {
     let id: String
     var coordinate: CLLocationCoordinate2D
-    let store: StoreEntity
+    let store: Store.Entity
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)

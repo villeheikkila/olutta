@@ -21,10 +21,10 @@ class AppModel {
     var status: Status = .unauthenticated
     // app
     var error: Error?
-    var stores: [StoreEntity] = []
-    var productsByStore: [UUID: [ProductEntity]] = [:]
-    var subscribedStoreIds = [UUID]()
-    var selectedStore: StoreEntity? {
+    var stores: [Store.Entity] = []
+    var productsByStore: [Store.Id: [ProductEntity]] = [:]
+    var subscribedStoreIds = [Store.Id]()
+    var selectedStore: Store.Entity? {
         didSet {
             guard let selectedStore else { return }
             Task {
@@ -104,7 +104,7 @@ class AppModel {
         }
     }
 
-    func getProductsByStoreId(id: UUID) async {
+    func getProductsByStoreId(id: Store.Id) async {
         do {
             let products: [ProductEntity] = try await rpcClient.call(
                 GetProductsByStoreIdCommand.self,

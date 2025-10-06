@@ -1,5 +1,5 @@
 {
-  "originHash" : "fb0ba561ff3c91ca5b1b35920c5fdb8beeea6f38caea639df13f7524e9763857",
+  "originHash" : "f69c5e0ee873b5f2dbc322d964bd65535e7aa1c8a266e68a934a9c65110bd3b6",
   "pins" : [
     {
       "identity" : "apnswift",
@@ -332,6 +332,15 @@
       "state" : {
         "revision" : "890830fff1a577dc83134890c7984020c5f6b43b",
         "version" : "1.6.2"
+      }
+    },
+    {
+      "identity" : "swift-tagged",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/swift-tagged",
+      "state" : {
+        "revision" : "3907a9438f5b57d317001dc99f3f11b46882272b",
+        "version" : "0.10.0"
       }
     }
   ],

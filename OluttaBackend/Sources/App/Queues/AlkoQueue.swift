@@ -1,4 +1,5 @@
 import Foundation
+import OluttaShared
 
 let alkoQueue = QueueConfiguration<QueueContext>(
     name: "alko",
@@ -39,7 +40,7 @@ let alkoQueue = QueueConfiguration<QueueContext>(
                 let storeAvailability = try await ctx.alkoService.getAvailability(productId: product.productExternalId)
                 let webstoreAvailability = try await ctx.alkoService.getWebstoreAvailability(id: product.productExternalId)
                 let storeAvailabilityResult = try await AlkoRepository.upsertWebstoreInventory(tx, logger: ctx.logger, productId: id, availabilities: webstoreAvailability)
-                let availabilities: [(storeId: UUID, count: String?)] = storeAvailability.compactMap { availability in
+                let availabilities: [(storeId: Store.Id, count: String?)] = storeAvailability.compactMap { availability in
                     let store = stores.first { store in store.alkoStoreId == availability.id }
                     guard let store else {
                         ctx.logger.warning("availability found for a store that doesn't exist in the db")

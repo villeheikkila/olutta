@@ -13,8 +13,8 @@ extension GetAppDataCommand: AuthenticatedCommandExecutable {
         let stores = try await deps.pg.withConnection { tx in
             try await AlkoRepository.getStores(tx, logger: logger)
         }
-        let storeEntities: [StoreEntity] = stores.map { store in
-            StoreEntity(
+        let storeEntities: [Store.Entity] = stores.map { store in
+            .init(
                 id: store.id,
                 alkoStoreId: store.alkoStoreId,
                 name: store.name,

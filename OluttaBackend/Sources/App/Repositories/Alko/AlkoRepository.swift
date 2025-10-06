@@ -1,5 +1,7 @@
 import Foundation
+import OluttaShared
 import PostgresNIO
+import Tagged
 
 enum AlkoRepository {
     static func getStores(_ connection: PostgresConnection, logger: Logger) async throws -> [AlkoStoreEntity] {
@@ -17,7 +19,7 @@ enum AlkoRepository {
             in stream.decode((UUID, String, String, String, String, String, Double, Double).self, context: .default)
         {
             let store = AlkoStoreEntity(
-                id: id,
+                id: .init(rawValue: id),
                 alkoStoreId: storeExternalId,
                 name: name,
                 address: address,
@@ -488,7 +490,7 @@ enum AlkoRepository {
         _ connection: PostgresConnection,
         logger: Logger,
         productId: UUID,
-        availabilities: [(storeId: UUID, count: String?)],
+        availabilities: [(storeId: Store.Id, count: String?)],
     ) async throws -> [(id: (UUID, UUID), isNewRecord: Bool)] {
         guard !availabilities.isEmpty else {
             return []
@@ -502,7 +504,7 @@ enum AlkoRepository {
         var placeholders: [String] = []
 
         for (index, availability) in availabilities.enumerated() {
-            bindings.append(availability.storeId)
+            bindings.append(availability.storeId.rawValue)
             bindings.append(productId)
             bindings.append(availability.count)
             let base = index * columns.count

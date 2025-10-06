@@ -1,7 +1,9 @@
 import Foundation
+import OluttaShared
+import Tagged
 
 struct AlkoStoreEntity: Codable {
-    let id: UUID
+    let id: Store.Id
     let alkoStoreId: String
     let name: String
     let address: String

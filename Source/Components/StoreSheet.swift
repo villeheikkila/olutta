@@ -52,7 +52,7 @@ struct StoreSheet: View {
 struct StoreDetailView: View {
     @State private var selectedStyle: String = "All"
     let navigationTitle: String
-    let storeId: UUID
+    let storeId: Store.Id
     @Environment(AppModel.self) private var appModel
     @Binding var searchText: String
     @Binding var isPresented: Bool
@@ -187,7 +187,7 @@ struct StoreListView: View {
         .navigationTitle(.stores)
     }
 
-    private var filteredStores: [StoreEntity] {
+    private var filteredStores: [Store.Entity] {
         if searchText.isEmpty {
             return []
         }
@@ -205,7 +205,7 @@ struct AvailableToOrderScreen: View {
     var body: some View {
         StoreDetailView(
             navigationTitle: "Available to Order",
-            storeId: UUID(),
+            storeId: Store.Id(rawValue: UUID()), // fixme
             searchText: $searchText,
             isPresented: $isPresented,
             onClose: nil,
@@ -251,7 +251,7 @@ struct BackgroundClearView: UIViewRepresentable {
 }
 
 struct StoreRow: View {
-    let store: StoreEntity
+    let store: Store.Entity
 
     var body: some View {
         VStack(alignment: .leading) {

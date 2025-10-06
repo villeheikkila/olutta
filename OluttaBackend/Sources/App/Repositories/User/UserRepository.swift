@@ -1,5 +1,7 @@
 import Foundation
+import OluttaShared
 import PostgresNIO
+import Tagged
 
 enum UserRepository {
     static func createUser(
@@ -195,7 +197,7 @@ enum UserRepository {
 
             if let storeId {
                 let subscription = StoreSubscriptionEntity(
-                    storeId: storeId,
+                    storeId: .init(rawValue: storeId),
                 )
                 subscriptions.append(subscription)
             }
@@ -227,13 +229,13 @@ enum UserRepository {
     static func addPushNotificationSubscription(
         connection: PostgresConnection,
         deviceId: UUID,
-        storeId: UUID,
+        storeId: Store.Id,
         userId: UUID,
         logger: Logger,
     ) async throws -> UUID {
         let result = try await connection.query("""
             INSERT INTO public.device_push_notification_subscription (device_id, store_id, user_id)
-            VALUES (\(deviceId), \(storeId), \(userId))
+            VALUES (\(deviceId), \(storeId.rawValue), \(userId))
             ON CONFLICT (device_id, store_id) DO UPDATE SET
                 updated_at = NOW()
             RETURNING id
@@ -248,13 +250,13 @@ enum UserRepository {
     static func removePushNotificationSubscription(
         connection: PostgresConnection,
         deviceId: UUID,
-        storeId: UUID,
+        storeId: Store.Id,
         userId: UUID,
         logger: Logger,
     ) async throws {
         try await connection.query("""
             DELETE FROM public.device_push_notification_subscription
-            WHERE device_id = \(deviceId) AND store_id = \(storeId) AND user_id = \(userId)
+            WHERE device_id = \(deviceId) AND store_id = \(storeId.rawValue) AND user_id = \(userId)
         """, logger: logger)
     }
 
@@ -321,5 +323,5 @@ struct UserWithSubscriptionsEntity {
 }
 
 struct StoreSubscriptionEntity {
-    let storeId: UUID
+    let storeId: Store.Id
 }

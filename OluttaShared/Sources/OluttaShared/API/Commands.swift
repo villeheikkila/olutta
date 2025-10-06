@@ -1,5 +1,6 @@
 import Foundation
 import HTTPTypes
+import Tagged
 
 public protocol CommandMetadata: Sendable {
     associatedtype Request: Codable
@@ -29,9 +30,9 @@ public struct GetAppDataCommand: AuthenticatedCommand {
     }
 
     public struct Response: Codable {
-        public let stores: [StoreEntity]
+        public let stores: [Store.Entity]
 
-        public init(stores: [StoreEntity]) {
+        public init(stores: [Store.Entity]) {
             self.stores = stores
         }
     }
@@ -41,9 +42,9 @@ public struct GetProductsByStoreIdCommand: AuthenticatedCommand {
     public static let name = "get_products_by_store_id"
 
     public struct Request: Codable, Sendable {
-        public let storeId: UUID
+        public let storeId: Store.Id
 
-        public init(storeId: UUID) {
+        public init(storeId: Store.Id) {
             self.storeId = storeId
         }
     }
@@ -88,9 +89,9 @@ public struct GetUserCommand: AuthenticatedCommand {
         }
 
         public struct Subscription: Codable, Sendable {
-            public let storeId: UUID
+            public let storeId: Store.Id
 
-            public init(storeId: UUID) {
+            public init(storeId: Store.Id) {
                 self.storeId = storeId
             }
         }
@@ -101,9 +102,9 @@ public struct SubscribeToStoreCommand: AuthenticatedCommand {
     public static let name = "subscribe_to_store"
 
     public struct Request: Codable, Sendable {
-        public let storeId: UUID
+        public let storeId: Store.Id
 
-        public init(storeId: UUID) {
+        public init(storeId: Store.Id) {
             self.storeId = storeId
         }
     }
@@ -117,9 +118,9 @@ public struct UnsubscribeFromStoreCommand: AuthenticatedCommand {
     public static let name = "unsusbscribe_from_store"
 
     public struct Request: Codable, Sendable {
-        public let storeId: UUID
+        public let storeId: Store.Id
 
-        public init(storeId: UUID) {
+        public init(storeId: Store.Id) {
             self.storeId = storeId
         }
     }
